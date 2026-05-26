@@ -62,4 +62,6 @@ export default class SaveSystem {
     static setSelectedCharacter(characterId) {
         localStorage.setItem("br_selected_character", characterId);
     }
+
+    
 }

@@ -9,7 +9,8 @@ import WeaponSystem from "../systems/WeaponSystem.js";
 import KillFeedSystem from "../systems/KillFeedSystem.js";
 import CompassSystem from "../systems/CompassSystem.js";
 import EndGameSystem from "../systems/EndGameSystem.js";
-import VirtualJoystick from "../systems/VirtualJoystick.js"; // Pastikan Anda membuat file ini sesuai panduan sebelumnya
+import ItemSystem from "../systems/ItemSystem.js";
+import ChestSystem from "../systems/ChestSystem.js";
 
 export default class GameScene extends Phaser.Scene {
     constructor() {
@@ -18,22 +19,6 @@ export default class GameScene extends Phaser.Scene {
 
     init(data) {
         this.enemyCount = data.enemyCount || 10;
-    }
-
-    preload() {
-        // ==========================================================
-        // 1. LOAD IMAGE UTAMU UNTUK INDIKATOR SENJATA DI BAR HUD
-        // ==========================================================
-        this.load.image('wp_pistol', 'assets/weapons/pistol.png');
-        this.load.image('wp_uzi', 'assets/weapons/uzi.png');
-        this.load.image('wp_smg', 'assets/weapons/smg.png');
-        this.load.image('wp_ak', 'assets/weapons/ak.png');
-        this.load.image('wp_m4', 'assets/weapons/m4.png');
-        this.load.image('wp_scar', 'assets/weapons/scar.png');
-        this.load.image('wp_sniper', 'assets/weapons/sniper.png');
-        this.load.image('wp_shotgun', 'assets/weapons/shotgun.png');
-        this.load.image('wp_rpg', 'assets/weapons/rpg.png');
-        this.load.image('wp_bomb', 'assets/weapons/bomb.png');
     }
 
     create() {
@@ -64,12 +49,14 @@ export default class GameScene extends Phaser.Scene {
         this.bulletSystem = new BulletSystem(this);
         this.enemySystem = new EnemySystem(this);
         this.weaponSystem = new WeaponSystem(this);
+        this.itemSystem = new ItemSystem(this);
+        this.chestSystem = new ChestSystem(this);
         this.minimapSystem = new MinimapSystem(this);
         this.killFeedSystem = new KillFeedSystem(this);
         this.compassSystem = new CompassSystem(this);
         this.endGameSystem = new EndGameSystem(this);
 
-        this.weaponSystem.createWeapons();
+        this.chestSystem.createChests();
         this.enemySystem.createEnemies(this.enemyCount);
 
         this.physics.add.collider(
@@ -77,28 +64,45 @@ export default class GameScene extends Phaser.Scene {
             this.mapSystem.obstacles
         );
 
-        this.crosshair = this.add.circle(0, 0, 6, 0xffffff);
+        this.crosshair = this.add.circle(
+            0,
+            0,
+            6,
+            0xffffff
+        );
+
+        this.crosshair.setPosition(
+            this.input.activePointer.worldX,
+            this.input.activePointer.worldY
+        );
+
         this.crosshair.setDepth(9999);
 
         for (let i = 0; i < this.enemySystem.enemies.length; i++) {
-            const enemy = this.enemySystem.enemies[i];
+
+            const enemy =
+                this.enemySystem.enemies[i];
+
             this.physics.add.collider(
                 enemy.sprite,
                 this.mapSystem.obstacles,
                 () => {
+
                     // paksa cari arah baru
                     this.enemySystem.setRandomSafeWaypoint(enemy);
+
                 }
             );
-        }
 
-        // Kontrol Keyboard PC
+}
+
         this.keys = this.input.keyboard.addKeys({
             up: Phaser.Input.Keyboard.KeyCodes.W,
             down: Phaser.Input.Keyboard.KeyCodes.S,
             left: Phaser.Input.Keyboard.KeyCodes.A,
             right: Phaser.Input.Keyboard.KeyCodes.D,
-            reload: Phaser.Input.Keyboard.KeyCodes.R
+            reload: Phaser.Input.Keyboard.KeyCodes.R,
+            pickup: Phaser.Input.Keyboard.KeyCodes.F
         });
 
         this.weaponKeys = this.input.keyboard.addKeys({
@@ -109,165 +113,211 @@ export default class GameScene extends Phaser.Scene {
             five: Phaser.Input.Keyboard.KeyCodes.FIVE
         });
 
-        // ==========================================================
-        // 2. CONFIG DETEKSI MOBILE DEVICE & SETUP DETEKSI ANALOG
-        // ==========================================================
-        const w = this.scale.width;
-        const h = this.scale.height;
-        this.isMobile = !this.sys.game.device.os.desktop;
-
-        if (this.isMobile) {
-            // Analog Kiri: Pergerakan (Move)
-            this.joystickLeft = new VirtualJoystick(this, 120, h - 120, 65, false);
-            // Analog Kanan: Membidik & Menembak (Shoot)
-            this.joystickRight = new VirtualJoystick(this, w - 380, h - 120, 65, true);
-            
-            this.nextFireTime = 0; // Mengatur jeda fire-rate auto mobile tembak
-        }
-
-        // ==========================================================
-        // 3. EVENT TEMBAK MANUAL PC (POINTERDOWN MOUSE KIRI)
-        // ==========================================================
         this.input.on("pointerdown", (pointer) => {
-            if (this.gameEnded || this.isMobile) return; // Abaikan jika mode hp/mobile aktif
-            if (!this.player.hasWeapon()) return;
-            if (this.player.isReloading) return;
-
-            if (this.player.getCurrentAmmo() <= 0) {
-                this.player.reload();
-                return;
-            }
-
-            const currentWeapon = this.player.getCurrentWeapon();
-            let spreadAngle = 0;
-            
-            if (currentWeapon === 'ak') spreadAngle = 0.08;       
-            else if (currentWeapon === 'm4' || currentWeapon === 'scar') spreadAngle = 0.04; 
-            else if (currentWeapon === 'uzi' || currentWeapon === 'smg') spreadAngle = 0.06; 
-            else if (currentWeapon === 'sniper') spreadAngle = 0.002; 
-            else if (currentWeapon === 'pistol') spreadAngle = 0.03;
-
-            let baseAngle = Phaser.Math.Angle.Between(
-                this.player.sprite.x,
-                this.player.sprite.y,
-                pointer.worldX,
-                pointer.worldY
-            );
-
-            // Perbaikan typo kode lama: Menyatukan akumulasi penyebaran peluru acak
-            let finalAngle = baseAngle + (Math.random() - 0.5) * spreadAngle;
-
-            const targetDistance = Phaser.Math.Distance.Between(this.player.sprite.x, this.player.sprite.y, pointer.worldX, pointer.worldY);
-            const targetX = this.player.sprite.x + Math.cos(finalAngle) * targetDistance;
-            const targetY = this.player.sprite.y + Math.sin(finalAngle) * targetDistance;
-
-            this.bulletSystem.shoot(
-                this.player.sprite.x,
-                this.player.sprite.y,
-                targetX,
-                targetY,
-                "player",
-                this.player,
-                currentWeapon
-            );
-
-            this.bulletSystem.createMuzzleFlash(this.player.sprite.x, this.player.sprite.y, finalAngle);
-
-            this.player.useAmmo();
-            this.uiSystem.updateAmmo(this.player);
+            this.shootPlayer(pointer); 
         });
-
-        // Setup awal kondisi UI saat masuk peta pertama kali
-        this.uiSystem.updateHP(this.player.hp);
-        this.uiSystem.updateWeaponBar(this.player);
     }
+
+    shootPlayer(pointer) {
+    if (this.gameEnded) return;
+    if (!this.player.hasWeapon()) return;
+    if (this.player.isReloading) return;
+
+    if (this.player.getCurrentAmmo() <= 0) {
+        this.player.reload();
+        return;
+    }
+
+    const currentWeapon = this.player.getCurrentWeapon();
+
+    let spreadAngle = 0;
+
+    if (currentWeapon === "ak") spreadAngle = 0.08;
+    else if (currentWeapon === "m4" || currentWeapon === "scar") spreadAngle = 0.04;
+    else if (currentWeapon === "uzi" || currentWeapon === "smg") spreadAngle = 0.06;
+    else if (currentWeapon === "sniper") spreadAngle = 0.002;
+    else if (currentWeapon === "pistol") spreadAngle = 0.03;
+    else if (currentWeapon === "shotgun") spreadAngle = 0.12;
+    else if (currentWeapon === "rpg") spreadAngle = 0.015;
+
+    const baseAngle = Phaser.Math.Angle.Between(
+        this.player.sprite.x,
+        this.player.sprite.y,
+        pointer.worldX,
+        pointer.worldY
+    );
+
+    const finalAngle =
+        baseAngle + (Math.random() - 0.5) * spreadAngle;
+
+    const targetDistance = Phaser.Math.Distance.Between(
+        this.player.sprite.x,
+        this.player.sprite.y,
+        pointer.worldX,
+        pointer.worldY
+    );
+
+    const targetX =
+        this.player.sprite.x + Math.cos(finalAngle) * targetDistance;
+
+    const targetY =
+        this.player.sprite.y + Math.sin(finalAngle) * targetDistance;
+
+    this.bulletSystem.shoot(
+        this.player.sprite.x,
+        this.player.sprite.y,
+        targetX,
+        targetY,
+        "player",
+        this.player,
+        currentWeapon
+    );
+
+    this.player.useAmmo();
+    this.uiSystem.updateAmmo(this.player);
+}
 
     update(time, delta) {
         if (this.gameEnded) return;
 
-        // ==========================================================
-        // 4. KONTROL GERAK PLAYER & ROTASI HADAP (PC VS MOBILE)
-        // ==========================================================
-        if (this.isMobile && this.joystickLeft) {
-            const moveX = this.joystickLeft.outputX;
-            const moveY = this.joystickLeft.outputY;
-            const moveSpeed = this.player.speed || 200;
-
-            if (this.joystickLeft.isDown) {
-                this.player.sprite.body.setVelocity(moveX * moveSpeed, moveY * moveSpeed);
-                
-                // Rotasi badan mengikuti arah gerak analog, jika analog kanan tidak sedang membidik
-                if (!this.joystickRight.isDown) {
-                    this.player.sprite.setRotation(Phaser.Math.Angle.Between(0, 0, moveX, moveY));
-                }
-            } else {
-                this.player.sprite.body.setVelocity(0, 0);
-            }
-        } else {
-            // Kontrol default Keyboard PC
-            this.player.move(this.keys);
-        }
-
-        // ==========================================================
-        // 5. KONTROL BIDIK & AUTO-SHOOT (MOBILE ANALOG KANAN)
-        // ==========================================================
-        if (this.isMobile && this.joystickRight && this.joystickRight.isDown) {
-            const shootX = this.joystickRight.outputX;
-            const shootY = this.joystickRight.outputY;
-
-            // Sensitivitas analog harus ditarik sejauh 30% dari pusat lingkaran agar tidak salah tembak
-            if (Math.abs(shootX) > 0.3 || Math.abs(shootY) > 0.3) {
-                const fireAngle = Phaser.Math.Angle.Between(0, 0, shootX, shootY);
-                this.player.sprite.setRotation(fireAngle);
-
-                // Proyeksikan posisi crosshair di depan player mobile mengikuti arah bidikan analog kanan
-                this.crosshair.setPosition(
-                    this.player.sprite.x + Math.cos(fireAngle) * 160,
-                    this.player.sprite.y + Math.sin(fireAngle) * 160
-                );
-
-                // Menembak secara otomatis berkala berdasarkan Fire-Rate
-                if (time > this.nextFireTime) {
-                    this.handleAnalogShoot(fireAngle);
-                    this.nextFireTime = time + 140; // Kecepatan jeda tembak otomatis (140 ms)
-                }
-            }
-        } else if (!this.isMobile) {
-            // Jika PC, posisi crosshair mengikuti cursor pointer mouse absolut
-            this.crosshair.setPosition(
-                this.input.activePointer.worldX,
-                this.input.activePointer.worldY
-            );
-        }
-
-        // SINKRONISASI LOGIKA SYSTEM GAME UTAMA
+        this.player.move(this.keys);
         this.compassSystem.update(this.player);
         this.bulletSystem.cleanup();
+
         this.handleWeaponSwitch();
 
-        if (Phaser.Input.Keyboard.JustDown(this.keys.reload)) {
-            this.player.reload();
-        }
+        // =========================================
+// RELOAD
+// =========================================
+if (
+    Phaser.Input.Keyboard.JustDown(
+        this.keys.reload
+    )
+) {
 
-        // Sembunyikan status teks reloading jika proses internal player selesai
-        if (this.player.isReloading === false) {
-            this.uiSystem.hideReloadText();
-        } else {
-            this.uiSystem.showReloadText();
-        }
+    this.player.reload();
 
-        this.uiSystem.updateAmmo(this.player);
+}
 
-        const weaponPicked = this.weaponSystem.checkPlayerPickup(this.player);
-        if (weaponPicked) {
-            this.uiSystem.updateWeaponBar(this.player);
-        }
+// =========================================
+// UI UPDATE
+// =========================================
+this.uiSystem.updateAmmo(
+    this.player
+);
+
+this.uiSystem.updateReloadAnimation();
+
+// =========================================
+// PICKUP SYSTEM (F)
+// =========================================
+// =========================================
+// PICKUP SYSTEM (F)
+// =========================================
+if (
+    Phaser.Input.Keyboard.JustDown(
+        this.keys.pickup
+    )
+) {
+
+    // =========================
+    // OPEN CHEST
+    // =========================
+    const chestOpened =
+        this.chestSystem.openNearestChestByPlayer(
+            this.player
+        );
+
+    // kalau berhasil buka chest,
+    // hentikan dulu proses pickup
+    if (chestOpened) {
+        return;
+    }
+
+    // =========================
+    // WEAPON PICKUP
+    // =========================
+    const weaponPicked =
+        this.weaponSystem.checkPlayerPickup(
+            this.player
+        );
+
+    if (weaponPicked) {
+
+        this.uiSystem.updateWeaponBar(
+            this.player
+        );
+
+        this.uiSystem.updateAmmo(
+            this.player
+        );
+
+        return;
+
+    }
+
+    // =========================
+    // ITEM PICKUP
+    // =========================
+    const itemPicked =
+        this.itemSystem.checkPlayerPickup(
+            this.player
+        );
+
+    if (itemPicked) {
+
+        this.uiSystem.updateHP(
+            this.player.hp
+        );
+
+        this.uiSystem.updateArmorIcons(
+            this.player
+        );
+
+    }
+
+}
 
         const zoneDamage = this.zoneSystem.update(this.player, delta);
-        this.uiSystem.updateZone(this.zoneSystem.getTimerText());
+
+        this.uiSystem.updateZone(
+            this.zoneSystem.getTimerText()
+        );
+
+        const nearWeapon = this.weaponSystem.findNearestWeapon(this.player.sprite);
+const nearItem = this.itemSystem.findNearestItem
+    ? this.itemSystem.findNearestItem(this.player.sprite)
+    : null;
+
+let showPickup = false;
+
+if (nearWeapon) {
+    const d = Phaser.Math.Distance.Between(
+        this.player.sprite.x,
+        this.player.sprite.y,
+        nearWeapon.x,
+        nearWeapon.y
+    );
+
+    if (d < 70) showPickup = true;
+}
+
+if (nearItem) {
+    const d = Phaser.Math.Distance.Between(
+        this.player.sprite.x,
+        this.player.sprite.y,
+        nearItem.x,
+        nearItem.y
+    );
+
+    if (d < 70) showPickup = true;
+}
+
+this.uiSystem.showPickupText(showPickup);
 
         if (zoneDamage) {
             this.uiSystem.updateHP(this.player.hp);
+
             if (this.player.hp <= 0) {
                 this.showLoseResult();
                 return;
@@ -275,14 +325,53 @@ export default class GameScene extends Phaser.Scene {
         }
 
         this.enemySystem.update(
+            
             this.player.sprite,
             this.zoneSystem,
             this.weaponSystem,
             this.bulletSystem,
             delta
         );
+        for (let i = 0; i < this.enemySystem.enemies.length; i++) {
+    const enemy = this.enemySystem.enemies[i];
 
-        this.uiSystem.updateAlive(this.enemySystem.getAliveCount() + 1);
+    const nearChest = this.chestSystem.findNearestChest(this.player.sprite);
+
+if (nearChest) {
+    const d = Phaser.Math.Distance.Between(
+        this.player.sprite.x,
+        this.player.sprite.y,
+        nearChest.x,
+        nearChest.y
+    );
+
+    if (d < 80) {
+        showPickup = true;
+    }
+}
+
+    if (!enemy.sprite.active) continue;
+
+    this.chestSystem.openNearestChestByEnemy(enemy);
+    this.weaponSystem.checkEnemyPickup(enemy);
+    this.itemSystem.checkEnemyPickup(enemy);
+}
+
+        for (let i = 0; i < this.enemySystem.enemies.length; i++) {
+
+    const enemy = this.enemySystem.enemies[i];
+
+    if (!enemy.sprite.active) continue;
+
+    this.itemSystem.checkEnemyPickup(
+        enemy
+    );
+
+}
+
+        this.uiSystem.updateAlive(
+            this.enemySystem.getAliveCount() + 1
+        );
 
         this.checkBulletHitEnemies();
         this.checkEnemyBulletHitPlayer();
@@ -299,54 +388,16 @@ export default class GameScene extends Phaser.Scene {
         );
     }
 
-    // Fungsi Pembantu: Mengeksekusi peluru melalui perhitungan arah data analog kanan HP
-    handleAnalogShoot(angle) {
-        if (!this.player.hasWeapon() || this.player.isReloading) return;
-
-        if (this.player.getCurrentAmmo() <= 0) {
-            this.player.reload();
-            return;
-        }
-
-        const currentWeapon = this.player.getCurrentWeapon();
-        let spreadAngle = 0;
-        
-        if (currentWeapon === 'ak') spreadAngle = 0.08;       
-        else if (currentWeapon === 'm4' || currentWeapon === 'scar') spreadAngle = 0.04; 
-        else if (currentWeapon === 'uzi' || currentWeapon === 'smg') spreadAngle = 0.06; 
-        else if (currentWeapon === 'sniper') spreadAngle = 0.002; 
-        else if (currentWeapon === 'pistol') spreadAngle = 0.03;
-
-        // Tambahkan deviasi acak (Spread) ke sudut tembakan analog
-        let finalAngle = angle + (Math.random() - 0.5) * spreadAngle;
-
-        // Jarak jangkauan tembakan proyeksi peluru virtual
-        const targetX = this.player.sprite.x + Math.cos(finalAngle) * 400;
-        const targetY = this.player.sprite.y + Math.sin(finalAngle) * 400;
-
-        this.bulletSystem.shoot(
-            this.player.sprite.x,
-            this.player.sprite.y,
-            targetX,
-            targetY,
-            "player",
-            this.player,
-            currentWeapon
-        );
-
-        this.bulletSystem.createMuzzleFlash(this.player.sprite.x, this.player.sprite.y, finalAngle);
-        this.player.useAmmo();
-        this.uiSystem.updateAmmo(this.player);
-    }
-
     checkBulletHitEnemies() {
         for (let i = 0; i < this.bulletSystem.bullets.length; i++) {
             const bullet = this.bulletSystem.bullets[i];
+
             if (!bullet.active) continue;
             if (bullet.ownerType === "enemy") continue;
 
             for (let j = 0; j < this.enemySystem.enemies.length; j++) {
                 const enemy = this.enemySystem.enemies[j];
+
                 if (!enemy.sprite.active) continue;
 
                 const distance = Phaser.Math.Distance.Between(
@@ -358,17 +409,24 @@ export default class GameScene extends Phaser.Scene {
 
                 if (distance < 35) {
                     const damage = bullet.damage || 10;
+
                     bullet.destroy();
                     enemy.takeDamage(damage);
+
                     this.totalDamage += damage;
 
                     if (!enemy.sprite.active) {
                         this.score += 10;
                         this.kills += 1;
+
                         this.uiSystem.updateScore(this.score);
                         this.uiSystem.updateKills(this.kills);
-                        this.uiSystem.showKillFeed("YOU killed " + enemy.nickname);
+
+                        this.uiSystem.showKillFeed(
+                            "YOU killed " + enemy.nickname
+                        );
                     }
+
                     break;
                 }
             }
@@ -378,6 +436,7 @@ export default class GameScene extends Phaser.Scene {
     checkEnemyBulletHitPlayer() {
         for (let i = 0; i < this.bulletSystem.bullets.length; i++) {
             const bullet = this.bulletSystem.bullets[i];
+
             if (!bullet.active) continue;
             if (bullet.ownerType !== "enemy") continue;
 
@@ -390,11 +449,15 @@ export default class GameScene extends Phaser.Scene {
 
             if (distance < 35) {
                 bullet.destroy();
+
                 this.player.takeDamage(bullet.damage || 10);
                 this.uiSystem.updateHP(this.player.hp);
 
                 if (this.player.hp <= 0) {
-                    this.uiSystem.showKillFeed(bullet.owner.nickname + " killed Player");
+                    this.uiSystem.showKillFeed(
+                        bullet.owner.nickname + " killed Player"
+                    );
+
                     this.showLoseResult();
                     return;
                 }
@@ -405,11 +468,13 @@ export default class GameScene extends Phaser.Scene {
     checkEnemyBulletHitEnemy() {
         for (let i = 0; i < this.bulletSystem.bullets.length; i++) {
             const bullet = this.bulletSystem.bullets[i];
+
             if (!bullet.active) continue;
             if (bullet.ownerType !== "enemy") continue;
 
             for (let j = 0; j < this.enemySystem.enemies.length; j++) {
                 const enemy = this.enemySystem.enemies[j];
+
                 if (!enemy.sprite.active) continue;
                 if (bullet.owner === enemy) continue;
 
@@ -422,11 +487,15 @@ export default class GameScene extends Phaser.Scene {
 
                 if (distance < 35) {
                     bullet.destroy();
+
                     enemy.takeDamage(bullet.damage || 10);
 
                     if (!enemy.sprite.active) {
-                        this.uiSystem.showKillFeed(bullet.owner.nickname + " killed " + enemy.nickname);
+                        this.uiSystem.showKillFeed(
+                            bullet.owner.nickname + " killed " + enemy.nickname
+                        );
                     }
+
                     break;
                 }
             }
@@ -436,6 +505,7 @@ export default class GameScene extends Phaser.Scene {
     checkEnemyHitPlayer() {
         for (let i = 0; i < this.enemySystem.enemies.length; i++) {
             const enemy = this.enemySystem.enemies[i];
+
             if (!enemy.sprite.active) continue;
 
             const distance = Phaser.Math.Distance.Between(
@@ -447,6 +517,7 @@ export default class GameScene extends Phaser.Scene {
 
             if (distance < 40) {
                 enemy.destroy();
+
                 this.player.takeDamage(10);
                 this.uiSystem.updateHP(this.player.hp);
 
@@ -461,10 +532,12 @@ export default class GameScene extends Phaser.Scene {
     checkEnemyHitEnemy() {
         for (let i = 0; i < this.enemySystem.enemies.length; i++) {
             const enemyA = this.enemySystem.enemies[i];
+
             if (!enemyA.sprite.active) continue;
 
             for (let j = i + 1; j < this.enemySystem.enemies.length; j++) {
                 const enemyB = this.enemySystem.enemies[j];
+
                 if (!enemyB.sprite.active) continue;
 
                 const distance = Phaser.Math.Distance.Between(
@@ -485,6 +558,7 @@ export default class GameScene extends Phaser.Scene {
     checkBulletHitObstacles() {
         for (let i = 0; i < this.bulletSystem.bullets.length; i++) {
             const bullet = this.bulletSystem.bullets[i];
+
             if (!bullet.active) continue;
 
             for (let j = 0; j < this.mapSystem.obstacles.length; j++) {
@@ -508,6 +582,7 @@ export default class GameScene extends Phaser.Scene {
                     } else {
                         bullet.destroy();
                     }
+
                     break;
                 }
             }
@@ -516,6 +591,7 @@ export default class GameScene extends Phaser.Scene {
 
     checkWinCondition() {
         const aliveEnemies = this.enemySystem.getAliveCount();
+
         if (aliveEnemies <= 0) {
             this.showWinResult();
         }
@@ -526,18 +602,22 @@ export default class GameScene extends Phaser.Scene {
             this.player.switchWeapon(0);
             this.uiSystem.updateWeaponBar(this.player);
         }
+
         if (Phaser.Input.Keyboard.JustDown(this.weaponKeys.two)) {
             this.player.switchWeapon(1);
             this.uiSystem.updateWeaponBar(this.player);
         }
+
         if (Phaser.Input.Keyboard.JustDown(this.weaponKeys.three)) {
             this.player.switchWeapon(2);
             this.uiSystem.updateWeaponBar(this.player);
         }
+
         if (Phaser.Input.Keyboard.JustDown(this.weaponKeys.four)) {
             this.player.switchWeapon(3);
             this.uiSystem.updateWeaponBar(this.player);
         }
+
         if (Phaser.Input.Keyboard.JustDown(this.weaponKeys.five)) {
             this.player.switchWeapon(4);
             this.uiSystem.updateWeaponBar(this.player);
@@ -546,8 +626,11 @@ export default class GameScene extends Phaser.Scene {
 
     showLoseResult() {
         if (this.gameEnded) return;
+
         this.gameEnded = true;
+
         const placement = this.enemySystem.getAliveCount() + 1;
+
         this.endGameSystem.showResult(
             "GAME OVER",
             placement,
@@ -558,7 +641,9 @@ export default class GameScene extends Phaser.Scene {
 
     showWinResult() {
         if (this.gameEnded) return;
+
         this.gameEnded = true;
+
         this.endGameSystem.showResult(
             "YOU WIN",
             1,

@@ -1,3 +1,5 @@
+import WeaponVisualFactory from "../systems/WeaponVisualFactory.js";
+
 export default class Enemy {
     constructor(scene, x, y, nickname) {
 
@@ -22,6 +24,9 @@ export default class Enemy {
 
         this.waypoint = null;
         this.waypointTimer = 0;
+
+        this.hasHelmet = false;
+        this.hasVest = false;
 
         // =========================
         // CONTAINER
@@ -93,28 +98,16 @@ export default class Enemy {
         // WEAPON
         // =========================
 
-        this.weaponSprite = scene.add.rectangle(
-            12,
-            2,
-            36,
-            8,
-            0x222222
-        );
-
-        this.weaponSprite.setOrigin(0.1, 0.5);
-
-        // =========================
-        // ADD
-        // =========================
+        this.weaponSprite = scene.add.container(8, 2);
+        this.weaponVisual = null;
 
         this.sprite.add([
             this.shadow,
-            this.weaponSprite,
             this.body,
             this.helmet,
-            this.visor
+            this.visor,
+            this.weaponSprite
         ]);
-
         // =========================
         // PHYSICS
         // =========================
@@ -255,40 +248,23 @@ export default class Enemy {
     }
 
     updateWeaponVisual() {
-
-        const colors = {
-            pistol: 0x444444,
-            uzi: 0x00ccff,
-            smg: 0x00ff99,
-            ak: 0xff6600,
-            m4: 0x0066ff,
-            scar: 0xffff00,
-            sniper: 0xaa00ff,
-            shotgun: 0xff9900,
-            rpg: 0xff0000,
-            bomb: 0xcc0000
-        };
-
-        this.weaponSprite.fillColor =
-            colors[this.currentWeapon] || 0x222222;
-
-        if (this.currentWeapon === "sniper") {
-            this.weaponSprite.width = 55;
-        }
-
-        else if (this.currentWeapon === "shotgun") {
-            this.weaponSprite.width = 45;
-        }
-
-        else if (this.currentWeapon === "rpg") {
-            this.weaponSprite.width = 50;
-        }
-
-        else {
-            this.weaponSprite.width = 36;
-        }
-
+    if (this.weaponVisual) {
+        this.weaponVisual.destroy();
+        this.weaponVisual = null;
     }
+
+    if (!this.currentWeapon) return;
+
+    this.weaponVisual = WeaponVisualFactory.create(
+        this.scene,
+        this.currentWeapon,
+        0,
+        0,
+        0.85
+    );
+
+    this.weaponSprite.add(this.weaponVisual);
+}
 
     hasWeapon() {
         return this.inventory.length > 0;
@@ -296,23 +272,41 @@ export default class Enemy {
 
     takeDamage(amount) {
 
-        this.hp -= amount;
+    let finalDamage = amount;
 
-        this.body.fillColor = 0xff0000;
+    if (this.hasHelmet) {
+        finalDamage -= 3;
+    }
 
-        this.scene.time.delayedCall(120, () => {
+    if (this.hasVest) {
+        finalDamage -= 5;
+    }
 
-            if (this.hp > 0) {
-                this.body.fillColor = 0xff6666;
-            }
+    if (finalDamage < 1) {
+        finalDamage = 1;
+    }
 
-        });
+    this.hp -= finalDamage;
 
-        if (this.hp <= 0) {
-            this.destroy();
+    this.body.fillColor = 0xff4444;
+
+    this.scene.time.delayedCall(100, () => {
+
+        if (this.hp > 0) {
+
+            this.body.fillColor =
+                this.originalBodyColor || 0xff5555;
+
         }
 
+    });
+
+    if (this.hp <= 0) {
+
+        this.destroy();
+
     }
+}
 
     destroy() {
 

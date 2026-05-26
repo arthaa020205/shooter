@@ -732,8 +732,8 @@ openCharacterShop() {
     const panel = this.add.rectangle(
         w / 2,
         h / 2,
-        760,
-        430,
+        880,
+        600,
         0x090d10,
         0.96
     );
@@ -769,12 +769,18 @@ openCharacterShop() {
         coinText
     ]);
 
-    const characters = [
-        { id: "default", name: "DEFAULT", price: 0, color: 0xffffff, helmet: 0x2f6b2f },
-        { id: "red", name: "RED", price: 10, color: 0xff4444, helmet: 0x992222 },
-        { id: "blue", name: "BLUE", price: 20, color: 0x4488ff, helmet: 0x003399 },
-        { id: "gold", name: "GOLD", price: 35, color: 0xffcc00, helmet: 0xaa7700 }
-    ];
+   const characters = [
+    { id: "default", name: "DEFAULT", price: 0, color: 0xffffff, helmet: 0x2f6b2f },
+    { id: "desert", name: "DESERT", price: 25, color: 0xd2b48c, helmet: 0x8b6f47 },
+    { id: "urban", name: "URBAN", price: 50, color: 0x888888, helmet: 0x333333 },
+    { id: "red", name: "RED", price: 100, color: 0xff4444, helmet: 0x992222 },
+    { id: "blue", name: "BLUE", price: 150, color: 0x4488ff, helmet: 0x003399 },
+    { id: "gold", name: "GOLD", price: 250, color: 0xffcc00, helmet: 0xaa7700 },
+    { id: "toxic", name: "TOXIC", price: 400, color: 0x00ff66, helmet: 0x006633 },
+    { id: "cyber", name: "CYBER", price: 600, color: 0xaa00ff, helmet: 0x440066 },
+    { id: "inferno", name: "INFERNO", price: 900, color: 0xff6600, helmet: 0x992200 },
+    { id: "phantom", name: "PHANTOM", price: 1500, color: 0x111111, helmet: 0x555555 }
+];
 
     const unlocked = this.getUnlockedCharacters();
     const selected = this.getSelectedCharacter();
@@ -782,8 +788,11 @@ openCharacterShop() {
     for (let i = 0; i < characters.length; i++) {
         const char = characters[i];
 
-        const x = w / 2 - 255 + i * 170;
-        const y = h / 2 + 15;
+        const col = i % 5;
+        const row = Math.floor(i / 5);
+
+        const x = w / 2 - 310 + col * 155;
+        const y = h / 2 - 70 + row * 170;
 
         const isUnlocked = unlocked.includes(char.id);
         const isSelected = selected === char.id;
@@ -791,8 +800,8 @@ openCharacterShop() {
         const card = this.add.rectangle(
             x,
             y,
-            145,
-            190,
+            138,
+            150,
             isSelected ? 0x234423 : 0x1a2229,
             1
         ).setInteractive({ useHandCursor: true });
@@ -842,9 +851,9 @@ openCharacterShop() {
 
         const btn = this.add.rectangle(
             x,
-            y + 55,
-            105,
-            34,
+            y + 48,
+            100,
+            28,
             isSelected ? 0x2f6b2f : 0xf3a922,
             1
         );
@@ -853,7 +862,7 @@ openCharacterShop() {
 
         const btnText = this.add.text(
             x,
-            y + 55,
+            y + 48,
             label,
             {
                 fontSize: "14px",
@@ -878,7 +887,7 @@ openCharacterShop() {
 
     const backButton = this.add.rectangle(
         w / 2,
-        h / 2 + 175,
+        h / 2 + 238,
         180,
         44,
         0x182026,
@@ -889,7 +898,7 @@ openCharacterShop() {
 
     const backText = this.add.text(
         w / 2,
-        h / 2 + 175,
+        h / 2 + 238,
         "BACK",
         {
             fontSize: "20px",

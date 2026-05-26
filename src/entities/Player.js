@@ -1,4 +1,5 @@
 import SaveSystem from "../systems/SaveSystem.js";
+import WeaponVisualFactory from "../systems/WeaponVisualFactory.js";
 
 export default class Player {
     constructor(scene, x, y) {
@@ -10,6 +11,9 @@ export default class Player {
 
         this.weaponAmmo = {};
         this.isReloading = false;
+
+        this.hasHelmet = false;
+        this.hasVest = false;
 
         this.selectedCharacter = SaveSystem.getSelectedCharacter();
 
@@ -69,44 +73,15 @@ export default class Player {
         // WEAPON
         // =========================
         this.weaponSprite = scene.add.container(8, 2);
-
-        this.weaponBody = scene.add.rectangle(
-            18,
-            0,
-            34,
-            8,
-            0x222222
-        );
-
-        this.weaponBarrel = scene.add.rectangle(
-            38,
-            0,
-            18,
-            4,
-            0x111111
-        );
-
-        this.weaponHandle = scene.add.rectangle(
-            12,
-            8,
-            6,
-            14,
-            0x333333
-        );
-
-        this.weaponSprite.add([
-            this.weaponBody,
-            this.weaponBarrel,
-            this.weaponHandle
-        ]);
+        this.weaponVisual = null;
 
         this.sprite.add([
-            this.shadow,
-            this.weaponSprite,
-            this.body,
-            this.helmet,
-            this.visor
-        ]);
+        this.shadow,
+        this.body,
+        this.helmet,
+        this.visor,
+        this.weaponSprite
+]);
 
         this.applyCharacterSkin();
 
@@ -116,6 +91,58 @@ export default class Player {
         this.sprite.body.setOffset(-24, -24);
         this.sprite.body.setCollideWorldBounds(true);
     }
+
+    heal(amount) {
+    this.hp += amount;
+
+    if (this.hp > 100) {
+        this.hp = 100;
+    }
+
+    if (this.scene.uiSystem) {
+        this.scene.uiSystem.updateHP(this.hp);
+    }
+}
+
+equipHelmet() {
+    this.hasHelmet = true;
+
+    this.helmet.fillColor = 0x555555;
+}
+
+equipVest() {
+    this.hasVest = true;
+
+    this.body.setStrokeStyle(5, 0x4444ff);
+}
+
+takeDamage(amount) {
+    let finalDamage = amount;
+
+    if (this.hasHelmet) {
+        finalDamage -= 3;
+    }
+
+    if (this.hasVest) {
+        finalDamage -= 5;
+    }
+
+    if (finalDamage < 1) {
+        finalDamage = 1;
+    }
+
+    this.hp -= finalDamage;
+
+    const originalColor = this.body.fillColor;
+
+    this.body.fillColor = 0xff4444;
+
+    this.scene.time.delayedCall(120, () => {
+        if (this.hp > 0) {
+            this.body.fillColor = originalColor;
+        }
+    });
+}
 
     move(keys) {
         const speed = 250;
@@ -165,24 +192,22 @@ export default class Player {
     }
 
     pickupWeapon(weaponType) {
-        if (!this.inventory.includes(weaponType)) {
-            this.inventory.push(weaponType);
-        }
 
-        this.currentWeaponIndex = this.inventory.indexOf(weaponType);
-            if (!this.weaponAmmo[weaponType]) {
+    if (!this.inventory.includes(weaponType)) {
 
-                const config =
-                    this.scene.bulletSystem.getWeaponConfig(
-                        weaponType
-                    );
+        this.inventory.push(weaponType);
 
-                this.weaponAmmo[weaponType] =
-                    config.ammo;
-            }
+        const config =
+            this.scene.bulletSystem.getWeaponConfig(
+                weaponType
+            );
 
-        this.updateWeaponVisual();
+        this.weaponAmmo[weaponType] =
+            weaponType === "bomb" ? 3 : config.ammo;
     }
+
+    this.updateWeaponVisual();
+}
 
     hasWeapon() {
         return this.inventory.length > 0;
@@ -204,122 +229,28 @@ export default class Player {
     }
 
     updateWeaponVisual() {
-        const weapon = this.getCurrentWeapon();
+    const weapon = this.getCurrentWeapon();
 
-        const colors = {
-            pistol: 0x444444,
-            uzi: 0x00ccff,
-            smg: 0x00ff99,
-            ak: 0xff6600,
-            m4: 0x0066ff,
-            scar: 0xffff00,
-            sniper: 0xaa00ff,
-            shotgun: 0xff9900,
-            rpg: 0xff0000,
-            bomb: 0xcc0000
-        };
-
-        this.weaponBody.fillColor = colors[weapon] || 0x222222;
-        this.weaponBarrel.fillColor = 0x111111;
-        this.weaponHandle.fillColor = 0x333333;
-
-        if (weapon === "pistol") {
-            this.weaponBody.width = 20;
-            this.weaponBody.height = 8;
-
-            this.weaponBarrel.width = 9;
-            this.weaponBarrel.height = 4;
-            this.weaponBarrel.x = 25;
-
-            this.weaponHandle.width = 6;
-            this.weaponHandle.height = 12;
-            this.weaponHandle.x = 10;
-            this.weaponHandle.y = 8;
-        } else if (weapon === "uzi" || weapon === "smg") {
-            this.weaponBody.width = 28;
-            this.weaponBody.height = 10;
-
-            this.weaponBarrel.width = 12;
-            this.weaponBarrel.height = 4;
-            this.weaponBarrel.x = 31;
-
-            this.weaponHandle.width = 7;
-            this.weaponHandle.height = 14;
-            this.weaponHandle.x = 13;
-            this.weaponHandle.y = 9;
-        } else if (weapon === "ak" || weapon === "m4" || weapon === "scar") {
-            this.weaponBody.width = 38;
-            this.weaponBody.height = 9;
-
-            this.weaponBarrel.width = 22;
-            this.weaponBarrel.height = 4;
-            this.weaponBarrel.x = 43;
-
-            this.weaponHandle.width = 7;
-            this.weaponHandle.height = 15;
-            this.weaponHandle.x = 15;
-            this.weaponHandle.y = 9;
-        } else if (weapon === "sniper") {
-            this.weaponBody.width = 48;
-            this.weaponBody.height = 8;
-
-            this.weaponBarrel.width = 35;
-            this.weaponBarrel.height = 3;
-            this.weaponBarrel.x = 58;
-
-            this.weaponHandle.width = 7;
-            this.weaponHandle.height = 14;
-            this.weaponHandle.x = 18;
-            this.weaponHandle.y = 9;
-        } else if (weapon === "shotgun") {
-            this.weaponBody.width = 44;
-            this.weaponBody.height = 12;
-
-            this.weaponBarrel.width = 26;
-            this.weaponBarrel.height = 6;
-            this.weaponBarrel.x = 50;
-
-            this.weaponHandle.width = 8;
-            this.weaponHandle.height = 15;
-            this.weaponHandle.x = 17;
-            this.weaponHandle.y = 10;
-        } else if (weapon === "rpg") {
-            this.weaponBody.width = 52;
-            this.weaponBody.height = 14;
-
-            this.weaponBarrel.width = 28;
-            this.weaponBarrel.height = 10;
-            this.weaponBarrel.x = 56;
-
-            this.weaponHandle.width = 9;
-            this.weaponHandle.height = 18;
-            this.weaponHandle.x = 18;
-            this.weaponHandle.y = 13;
-        } else if (weapon === "bomb") {
-            this.weaponBody.width = 18;
-            this.weaponBody.height = 18;
-
-            this.weaponBarrel.width = 0;
-            this.weaponBarrel.height = 0;
-
-            this.weaponHandle.width = 0;
-            this.weaponHandle.height = 0;
-        } else {
-            this.weaponBody.width = 28;
-            this.weaponBody.height = 8;
-
-            this.weaponBarrel.width = 12;
-            this.weaponBarrel.height = 4;
-            this.weaponBarrel.x = 31;
-
-            this.weaponHandle.width = 6;
-            this.weaponHandle.height = 12;
-            this.weaponHandle.x = 12;
-            this.weaponHandle.y = 8;
-        }
+    if (this.weaponVisual) {
+        this.weaponVisual.destroy();
+        this.weaponVisual = null;
     }
 
-    getCurrentAmmo() {
+    if (!weapon) return;
+
+    this.weaponVisual = WeaponVisualFactory.create(
+        this.scene,
+        weapon,
+        0,
+        0,
+        0.85
+    );
+
+    this.weaponSprite.add(this.weaponVisual);
+}
+
+   getCurrentAmmo() {
+
     const weapon = this.getCurrentWeapon();
 
     if (!weapon) return 0;
@@ -328,51 +259,49 @@ export default class Player {
 }
 
 useAmmo() {
+
     const weapon = this.getCurrentWeapon();
 
     if (!weapon) return;
 
     if (this.weaponAmmo[weapon] > 0) {
+
         this.weaponAmmo[weapon]--;
+
     }
+
 }
 
 reload() {
-
     if (this.isReloading) return;
 
     const weapon = this.getCurrentWeapon();
 
     if (!weapon) return;
 
-    const config =
-        this.scene.bulletSystem.getWeaponConfig(
-            weapon
-        );
+    // bomb/grenade tidak bisa reload
+    if (weapon === "bomb") {
+        return;
+    }
 
-    if (
-        this.weaponAmmo[weapon] >= config.ammo
-    ) {
+    const config = this.scene.bulletSystem.getWeaponConfig(weapon);
+
+    if (this.weaponAmmo[weapon] >= config.ammo) {
         return;
     }
 
     this.isReloading = true;
 
-    this.scene.uiSystem.showReloadText();
+    this.scene.uiSystem.startReloadAnimation(config.reload);
 
-    this.scene.time.delayedCall(
-        config.reload,
-        () => {
+    this.scene.time.delayedCall(config.reload, () => {
+        this.weaponAmmo[weapon] = config.ammo;
 
-            this.weaponAmmo[weapon] =
-                config.ammo;
+        this.isReloading = false;
 
-            this.isReloading = false;
-
-            this.scene.uiSystem.hideReloadText();
-
-        }
-    );
+        this.scene.uiSystem.stopReloadAnimation();
+        this.scene.uiSystem.updateAmmo(this);
+    });
 }
 
     applyCharacterSkin() {

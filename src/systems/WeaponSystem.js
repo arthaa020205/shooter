@@ -1,83 +1,21 @@
+import WeaponVisualFactory from "./WeaponVisualFactory.js";
+
 export default class WeaponSystem {
     constructor(scene) {
         this.scene = scene;
         this.weapons = [];
 
-        // Tambahkan dimensi visual hiasan barrel senjata di constructor WeaponSystem kamu:
-this.weaponData = {
-    pistol: {
-        name: "P1911",
-        color: 0x555555,
-        clipSize: 7,
-        maxReserve: 35,
-        visualW: 24, // Panjang moncong saat dipegang hand
-        visualH: 6   // Tebal senjatanya
-    },
-    uzi: {
-        name: "UZI",
-        color: 0x00ccff,
-        clipSize: 25,
-        maxReserve: 100,
-        visualW: 22,
-        visualH: 10
-    },
-    smg: {
-        name: "MP5",
-        color: 0x00ff99,
-        clipSize: 30,
-        maxReserve: 120,
-        visualW: 32,
-        visualH: 8
-    },
-    ak: {
-        name: "AK-47",
-        color: 0xff6600,
-        clipSize: 30,
-        maxReserve: 90,
-        visualW: 42,
-        visualH: 9
-    },
-    m4: {
-        name: "M416",
-        color: 0x0066ff,
-        clipSize: 30,
-        maxReserve: 90,
-        visualW: 44,
-        visualH: 8
-    },
-    scar: {
-        name: "SCAR-L",
-        color: 0xffff00,
-        clipSize: 30,
-        maxReserve: 90,
-        visualW: 40,
-        visualH: 9
-    },
-    sniper: {
-        name: "AWM",
-        color: 0xaa00ff,
-        clipSize: 5,
-        maxReserve: 15,
-        visualW: 56, // Sangat panjang khas sniper rifle
-        visualH: 6
-    },
-    rpg: {
-        name: "RPG-7",
-        color: 0xff0000,
-        clipSize: 1,
-        maxReserve: 3,
-        visualW: 48,
-        visualH: 14
-    },
-    bomb: {
-        name: "Grenade",
-        color: 0xcc0000,
-        clipSize: 1,
-        maxReserve: 4,
-        visualW: 14, // Bulat kecil di genggaman tangan
-        visualH: 14
-    }
-};
+        this.weaponData = {
+            pistol: { name: "Pistol", color: 0x444444 },
+            uzi: { name: "UZI", color: 0x00ccff },
+            smg: { name: "SMG", color: 0x00ff99 },
+            ak: { name: "AK", color: 0xff6600 },
+            m4: { name: "M4", color: 0x0066ff },
+            scar: { name: "SCAR", color: 0xffff00 },
+            sniper: { name: "AWM", color: 0xaa00ff },
+            rpg: { name: "RPG", color: 0xff0000 },
+            bomb: { name: "Grenade", color: 0xcc0000 }
+        };
     }
 
     createWeapons() {
@@ -95,7 +33,6 @@ this.weaponData = {
 
         for (let i = 0; i < 45; i++) {
             const type = Phaser.Utils.Array.GetRandom(types);
-
             const position = this.getSafeWeaponPosition();
 
             this.spawnWeapon(
@@ -123,16 +60,11 @@ this.weaponData = {
             }
         }
 
-        return {
-            x: x,
-            y: y
-        };
+        return { x, y };
     }
 
     isNearObstacle(x, y) {
-        if (!this.scene.mapSystem) {
-            return false;
-        }
+        if (!this.scene.mapSystem) return false;
 
         for (let i = 0; i < this.scene.mapSystem.obstacles.length; i++) {
             const obstacle = this.scene.mapSystem.obstacles[i];
@@ -161,30 +93,74 @@ this.weaponData = {
     spawnWeapon(x, y, type) {
         const data = this.weaponData[type];
 
-        const weapon = this.scene.add.rectangle(
-            x,
-            y,
-            42,
-            22,
-            data.color
-        );
+        const weapon = this.scene.add.container(x, y);
 
         weapon.weaponType = type;
+        weapon.active = true;
+
+        const shadow = this.scene.add.ellipse(
+            0,
+            13,
+            46,
+            14,
+            0x000000,
+            0.25
+        );
+
+        const visual = WeaponVisualFactory.create(
+            this.scene,
+            type,
+            -20,
+            0,
+            0.75
+        );
 
         const label = this.scene.add.text(
-            x,
-            y - 28,
+            0,
+            -34,
             data.name,
             {
-                fontSize: "14px",
+                fontSize: "13px",
                 color: "#ffffff",
-                backgroundColor: "#000000"
+                backgroundColor: "#000000",
+                fontStyle: "bold"
             }
         ).setOrigin(0.5);
 
+        weapon.add([
+            shadow,
+            visual,
+            label
+        ]);
+
         weapon.label = label;
+        weapon.visual = visual;
+
+        if (this.weapons.length < 20) {
+    this.scene.tweens.add({
+        targets: weapon,
+        y: y - 4,
+        duration: 1000,
+        yoyo: true,
+        repeat: -1,
+        ease: "Sine.easeInOut"
+    });
+}
 
         this.weapons.push(weapon);
+    }
+
+    removeWeapon(weapon) {
+        if (weapon.label) {
+            weapon.label.destroy();
+        }
+
+        if (weapon.visual) {
+            weapon.visual.destroy();
+        }
+
+        weapon.active = false;
+        weapon.destroy();
     }
 
     checkPlayerPickup(player) {
@@ -200,12 +176,9 @@ this.weaponData = {
                 weapon.y
             );
 
-            if (distance < 50) {
+            if (distance < 55) {
                 player.pickupWeapon(weapon.weaponType);
-
-                if (weapon.label) weapon.label.destroy();
-
-                weapon.destroy();
+                this.removeWeapon(weapon);
 
                 return true;
             }
@@ -227,12 +200,9 @@ this.weaponData = {
                 weapon.y
             );
 
-            if (distance < 50) {
+            if (distance < 55) {
                 enemy.pickupWeapon(weapon.weaponType);
-
-                if (weapon.label) weapon.label.destroy();
-
-                weapon.destroy();
+                this.removeWeapon(weapon);
 
                 return true;
             }

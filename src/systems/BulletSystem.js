@@ -10,11 +10,6 @@ export default class BulletSystem {
             return;
         }
 
-        if (weaponType === "shotgun") {
-            this.shootShotgun(x, y, targetX, targetY, ownerType, owner);
-            return;
-        }
-
         const config = this.getWeaponConfig(weaponType);
 
         this.createBullet(
@@ -28,41 +23,92 @@ export default class BulletSystem {
         );
     }
 
-    shootShotgun(x, y, targetX, targetY, ownerType, owner) {
-        const baseAngle = Phaser.Math.Angle.Between(x, y, targetX, targetY);
-        const config = this.getWeaponConfig("shotgun");
 
-        for (let i = -2; i <= 2; i++) {
-            const angle = baseAngle + i * 0.15;
+    createBulletVisual(x, y, weaponType, config) {
 
-            const bullet = this.scene.add.rectangle(
-                x,
-                y,
-                10,
-                10,
-                config.color
-            );
+    const container = this.scene.add.container(
+        x,
+        y
+    );
 
-            this.scene.physics.add.existing(bullet);
+    let width = 18;
+    let height = 3;
 
-            bullet.ownerType = ownerType;
-            bullet.owner = owner;
-            bullet.damage = config.damage;
-            bullet.weaponType = weaponType;
-            bullet.damage = config.damage;
-            bullet.range = config.range;
-            bullet.startX = x;
-            bullet.startY = y;
-
-            this.bullets.push(bullet);
-
-            bullet.body.setVelocity(
-                Math.cos(angle) * config.speed,
-                Math.sin(angle) * config.speed
-            );
-        }
+    // =========================
+    // SIZE BERDASARKAN SENJATA
+    // =========================
+    if (
+        weaponType === "uzi" ||
+        weaponType === "smg"
+    ) {
+        width = 12;
+        height = 2;
     }
 
+    else if (
+        weaponType === "ak" ||
+        weaponType === "m4" ||
+        weaponType === "scar"
+    ) {
+        width = 20;
+        height = 3;
+    }
+
+    else if (weaponType === "sniper") {
+        width = 32;
+        height = 3;
+    }
+
+
+
+    else if (weaponType === "rpg") {
+        width = 26;
+        height = 8;
+    }
+
+    // =========================
+    // TRAIL / GLOW
+    // =========================
+    const glow = this.scene.add.rectangle(
+        -width / 2,
+        0,
+        width * 1.5,
+        height * 2.5,
+        0xffffff,
+        0.15
+    );
+
+    // =========================
+    // BULLET CORE
+    // =========================
+    const bullet = this.scene.add.rectangle(
+        0,
+        0,
+        width,
+        height,
+        0xffffff
+    );
+
+    // =========================
+    // BULLET HEAD
+    // =========================
+    const tip = this.scene.add.circle(
+        width / 2,
+        0,
+        height,
+        0xffffff
+    );
+
+    container.add([
+        glow,
+        bullet,
+        tip
+    ]);
+
+    container.setDepth(2000);
+
+    return container;
+}
     throwBomb(x, y, targetX, targetY, ownerType, owner) {
 
     const bomb = this.scene.add.circle(
@@ -215,7 +261,7 @@ export default class BulletSystem {
         this.bullets.push(bullet);
 
         const angle = Phaser.Math.Angle.Between(x, y, targetX, targetY);
-
+        bullet.setRotation(angle);
         bullet.body.setVelocity(
             Math.cos(angle) * config.speed,
             Math.sin(angle) * config.speed
@@ -228,7 +274,7 @@ export default class BulletSystem {
     pistol: {
         damage: 5,
         speed: 600,
-        size: 9,
+        size: 5,
         color: 0xffffff,
         ammo: 12,
         reload: 1000
@@ -237,7 +283,7 @@ export default class BulletSystem {
     uzi: {
         damage: 10,
         speed: 850,
-        size: 7,
+        size: 5,
         color: 0x00ccff,
         ammo: 25,
         reload: 1200
@@ -246,7 +292,7 @@ export default class BulletSystem {
     smg: {
         damage: 10,
         speed: 820,
-        size: 8,
+        size: 5,
         color: 0x00ff99,
         ammo: 30,
         reload: 1400
@@ -255,7 +301,7 @@ export default class BulletSystem {
     ak: {
         damage: 15,
         speed: 760,
-        size: 10,
+        size: 8,
         color: 0xff6600,
         ammo: 30,
         reload: 1700
@@ -264,7 +310,7 @@ export default class BulletSystem {
     m4: {
         damage: 13,
         speed: 820,
-        size: 10,
+        size: 7,
         color: 0x0066ff,
         ammo: 30,
         reload: 1600
@@ -273,7 +319,7 @@ export default class BulletSystem {
     scar: {
         damage: 12,
         speed: 800,
-        size: 10,
+        size: 7,
         color: 0xffff00,
         ammo: 30,
         reload: 1700
@@ -282,7 +328,7 @@ export default class BulletSystem {
     sniper: {
         damage: 50,
         speed: 1200,
-        size: 13,
+        size: 10,
         color: 0xaa00ff,
         ammo: 5,
         reload: 2300
@@ -300,7 +346,7 @@ export default class BulletSystem {
     rpg: {
         damage: 100,
         speed: 420,
-        size: 18,
+        size: 10,
         color: 0xff0000,
         ammo: 1,
         reload: 3000
