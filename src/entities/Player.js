@@ -192,19 +192,51 @@ takeDamage(amount) {
     }
 
     pickupWeapon(weaponType) {
+    const maxSlots = 5;
 
-    if (!this.inventory.includes(weaponType)) {
+    const config =
+        this.scene.bulletSystem.getWeaponConfig(
+            weaponType
+        );
 
+    // kalau senjata yang sama sudah ada, cukup pindah ke slot itu
+    if (this.inventory.includes(weaponType)) {
+        this.currentWeaponIndex =
+            this.inventory.indexOf(weaponType);
+
+        this.updateWeaponVisual();
+        return;
+    }
+
+    // kalau slot masih kosong, tambah senjata baru
+    if (this.inventory.length < maxSlots) {
         this.inventory.push(weaponType);
 
-        const config =
-            this.scene.bulletSystem.getWeaponConfig(
-                weaponType
-            );
+        this.currentWeaponIndex =
+            this.inventory.length - 1;
 
         this.weaponAmmo[weaponType] =
-            weaponType === "bomb" ? 3 : config.ammo;
+            weaponType === "bomb"
+                ? 3
+                : config.ammo;
+
+        this.updateWeaponVisual();
+        return;
     }
+
+    // kalau inventory penuh, ganti senjata di slot aktif
+    const oldWeapon =
+        this.inventory[this.currentWeaponIndex];
+
+    delete this.weaponAmmo[oldWeapon];
+
+    this.inventory[this.currentWeaponIndex] =
+        weaponType;
+
+    this.weaponAmmo[weaponType] =
+        weaponType === "bomb"
+            ? 3
+            : config.ammo;
 
     this.updateWeaponVisual();
 }
@@ -328,6 +360,42 @@ reload() {
                 bodyColor: 0xffdd55,
                 helmetColor: 0xaa7700,
                 strokeColor: 0xffaa00
+            },
+
+            desert: {
+                bodyColor: 0xd2b48c,
+                helmetColor: 0x8b6f47,
+                strokeColor: 0xb8945f
+            },
+
+            urban: {
+                bodyColor: 0x888888,
+                helmetColor: 0x333333,
+                strokeColor: 0x555555
+            },
+
+            toxic: {
+                bodyColor: 0x00ff66,
+                helmetColor: 0x006633,
+                strokeColor: 0x00aa44
+            },
+
+            cyber: {
+                bodyColor: 0xaa00ff,
+                helmetColor: 0x440066,
+                strokeColor: 0x7700aa
+            },
+
+            inferno: {
+                bodyColor: 0xff6600,
+                helmetColor: 0x992200,
+                strokeColor: 0xcc4400
+            },
+
+            phantom: {
+                bodyColor: 0x111111,
+                helmetColor: 0x555555,
+                strokeColor: 0x777777
             }
         };
 

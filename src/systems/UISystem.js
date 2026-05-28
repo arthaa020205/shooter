@@ -255,7 +255,7 @@ this.vestIcon = scene.add.text(
 
 this.pickupText = scene.add.text(
     w / 2,
-    h - 155,
+    h - 500,
     "PRESS F TO PICKUP",
     {
         fontSize: "16px",

@@ -1031,6 +1031,42 @@ openCharacterShop() {
                 helmetColor: 0xaa7700,
                 strokeColor: 0xffaa00,
                 accent: 0xffcc00
+            },
+
+            desert: {
+                bodyColor: 0xd2b48c,
+                helmetColor: 0x8b6f47,
+                strokeColor: 0xb8945f
+            },
+
+            urban: {
+                bodyColor: 0x888888,
+                helmetColor: 0x333333,
+                strokeColor: 0x555555
+            },
+
+            toxic: {
+                bodyColor: 0x00ff66,
+                helmetColor: 0x006633,
+                strokeColor: 0x00aa44
+            },
+
+            cyber: {
+                bodyColor: 0xaa00ff,
+                helmetColor: 0x440066,
+                strokeColor: 0x7700aa
+            },
+
+            inferno: {
+                bodyColor: 0xff6600,
+                helmetColor: 0x992200,
+                strokeColor: 0xcc4400
+            },
+
+            phantom: {
+                bodyColor: 0x111111,
+                helmetColor: 0x555555,
+                strokeColor: 0x777777
             }
         };
 

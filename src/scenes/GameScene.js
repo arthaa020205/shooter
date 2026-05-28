@@ -11,6 +11,7 @@ import CompassSystem from "../systems/CompassSystem.js";
 import EndGameSystem from "../systems/EndGameSystem.js";
 import ItemSystem from "../systems/ItemSystem.js";
 import ChestSystem from "../systems/ChestSystem.js";
+import TutorialSystem from "../systems/TutorialSystem.js";
 
 export default class GameScene extends Phaser.Scene {
     constructor() {
@@ -48,6 +49,11 @@ export default class GameScene extends Phaser.Scene {
         this.uiSystem = new UISystem(this);
         this.bulletSystem = new BulletSystem(this);
         this.enemySystem = new EnemySystem(this);
+        this.tutorialSystem = new TutorialSystem(this);
+
+        if (this.tutorialSystem.shouldShowTutorial()) {
+            this.tutorialSystem.create();
+        }
         this.weaponSystem = new WeaponSystem(this);
         this.itemSystem = new ItemSystem(this);
         this.chestSystem = new ChestSystem(this);
