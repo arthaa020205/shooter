@@ -17,6 +17,8 @@ export default class Enemy {
         this.lastX = x;
         this.lastY = y;
 
+        this.lastShotTime = 0;
+
         this.stuckTimer = 0;
 
         this.unstuckTime = 0;
@@ -142,10 +144,17 @@ export default class Enemy {
 
     updateNamePosition() {
 
-        this.nameText.setPosition(
-            this.sprite.x,
-            this.sprite.y - 50
-        );
+        this.nameText.x = Phaser.Math.Linear(
+    this.nameText.x,
+    this.sprite.x,
+    0.15
+);
+
+this.nameText.y = Phaser.Math.Linear(
+    this.nameText.y,
+    this.sprite.y - 48,
+    0.15
+);
 
     }
 

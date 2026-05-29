@@ -19,6 +19,8 @@ export default class Player {
 
         this.sprite = scene.add.container(x, y);
 
+        this.canShoot = true;
+
         // =========================
         // SHADOW
         // =========================
@@ -406,4 +408,12 @@ reload() {
 
         this.helmet.fillColor = skin.helmetColor;
     }
+
+    startShootCooldown(duration) {
+    this.canShoot = false;
+
+    this.scene.time.delayedCall(duration, () => {
+        this.canShoot = true;
+    });
+}
 }

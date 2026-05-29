@@ -33,6 +33,9 @@ export default class GameScene extends Phaser.Scene {
         this.mapSystem.createGrid();
         this.mapSystem.createObstacles();
 
+        this.isMouseDown = false;
+        this.lastShotTime = 0;
+
         this.zoneSystem = new ZoneSystem(this);
 
         this.player = new Player(this, 3000, 2500);
@@ -119,15 +122,20 @@ export default class GameScene extends Phaser.Scene {
             five: Phaser.Input.Keyboard.KeyCodes.FIVE
         });
 
-        this.input.on("pointerdown", (pointer) => {
-            this.shootPlayer(pointer); 
+       this.input.on("pointerdown", () => {
+            this.isMouseDown = true;
         });
-    }
+
+        this.input.on("pointerup", () => {
+            this.isMouseDown = false;
+        });
+            }
 
     shootPlayer(pointer) {
     if (this.gameEnded) return;
     if (!this.player.hasWeapon()) return;
     if (this.player.isReloading) return;
+    if (!this.player.canShoot) return;
 
     if (this.player.getCurrentAmmo() <= 0) {
         this.player.reload();
@@ -180,6 +188,12 @@ export default class GameScene extends Phaser.Scene {
     );
 
     this.player.useAmmo();
+
+    if (currentWeapon === "sniper") {
+
+    this.player.startShootCooldown(1500);
+
+}
     this.uiSystem.updateAmmo(this.player);
 }
 
@@ -191,6 +205,10 @@ export default class GameScene extends Phaser.Scene {
         this.bulletSystem.cleanup();
 
         this.handleWeaponSwitch();
+
+        if (this.isMouseDown) {
+            this.tryAutoShoot(time);
+        }
 
         // =========================================
 // RELOAD
@@ -657,4 +675,35 @@ if (nearChest) {
             this.totalDamage
         );
     }
+
+    tryAutoShoot(time) {
+    if (!this.player.hasWeapon()) return;
+
+    const weapon = this.player.getCurrentWeapon();
+    const fireRate = this.getFireRate(weapon);
+
+    if (time - this.lastShotTime < fireRate) {
+        return;
+    }
+
+    this.lastShotTime = time;
+
+    this.shootPlayer(this.input.activePointer);
+}
+
+getFireRate(weapon) {
+    const rates = {
+        pistol: 350,
+        uzi: 90,
+        smg: 100,
+        ak: 140,
+        m4: 120,
+        scar: 130,
+        sniper: 1400,
+        rpg: 900,
+        bomb: 700
+    };
+
+    return rates[weapon] || 300;
+}
 }

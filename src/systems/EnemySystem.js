@@ -269,20 +269,23 @@ export default class EnemySystem {
             } else if (distanceToTarget <= 520) {
                 enemy.strafeAround(target, 130);
 
-                if (enemy.shootCooldown <= 0) {
-                    bulletSystem.shoot(
-                        enemy.sprite.x,
-                        enemy.sprite.y,
-                        target.x,
-                        target.y,
-                        "enemy",
-                        enemy,
-                        enemy.currentWeapon
-                    );
+                const fireRate = this.getEnemyFireRate(enemy.currentWeapon);
 
-                    enemy.shootCooldown =
-                        this.getCooldownByWeapon(enemy.currentWeapon);
-                }
+if (this.scene.time.now - enemy.lastShotTime < fireRate) {
+    return;
+}
+
+enemy.lastShotTime = this.scene.time.now;
+
+bulletSystem.shoot(
+    enemy.sprite.x,
+    enemy.sprite.y,
+    target.x,
+    target.y,
+    "enemy",
+    enemy,
+    enemy.currentWeapon
+);
             } else {
                 enemy.moveTo(target, 150);
             }
@@ -406,4 +409,20 @@ export default class EnemySystem {
 
         return count;
     }
+
+    getEnemyFireRate(weapon) {
+    const rates = {
+        pistol: 450,
+        uzi: 110,
+        smg: 120,
+        ak: 160,
+        m4: 140,
+        scar: 150,
+        sniper: 1600,
+        rpg: 1000,
+        bomb: 900
+    };
+
+    return rates[weapon] || 400;
+}
 }
