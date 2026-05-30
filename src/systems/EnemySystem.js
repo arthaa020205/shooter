@@ -21,8 +21,8 @@ export default class EnemySystem {
         while (!valid && attempts < 100) {
             attempts++;
 
-            x = enemy.sprite.x + Phaser.Math.Between(-500, 500);
-            y = enemy.sprite.y + Phaser.Math.Between(-500, 500);
+            x = enemy.sprite.x + Phaser.Math.Between(-650, 650);
+            y = enemy.sprite.y + Phaser.Math.Between(-650, 650);
 
             x = Phaser.Math.Clamp(x, 100, this.worldWidth - 100);
             y = Phaser.Math.Clamp(y, 100, this.worldHeight - 100);
@@ -44,10 +44,8 @@ export default class EnemySystem {
                 obstacle.y
             );
 
-            const safeDistance = Math.max(
-                obstacle.width || 80,
-                obstacle.height || 80
-            ) / 2 + 90;
+            const safeDistance =
+                Math.max(obstacle.width || 80, obstacle.height || 80) / 2 + 90;
 
             if (distance < safeDistance) {
                 return true;
@@ -75,12 +73,7 @@ export default class EnemySystem {
                 const px = Phaser.Math.Linear(fromX, toX, t);
                 const py = Phaser.Math.Linear(fromY, toY, t);
 
-                if (
-                    px > left &&
-                    px < right &&
-                    py > top &&
-                    py < bottom
-                ) {
+                if (px > left && px < right && py > top && py < bottom) {
                     return false;
                 }
             }
@@ -116,13 +109,8 @@ export default class EnemySystem {
                 player.y
             );
 
-            if (distanceFromPlayer < this.minDistanceFromPlayer) {
-                continue;
-            }
-
-            if (this.isNearObstacle(x, y)) {
-                continue;
-            }
+            if (distanceFromPlayer < this.minDistanceFromPlayer) continue;
+            if (this.isNearObstacle(x, y)) continue;
 
             let tooCloseToEnemy = false;
 
@@ -150,7 +138,6 @@ export default class EnemySystem {
         }
 
         const nickname = "bot" + String(number).padStart(2, "0");
-
         const enemy = new Enemy(this.scene, x, y, nickname);
 
         this.enemies.push(enemy);
@@ -163,10 +150,6 @@ export default class EnemySystem {
             if (!enemy.sprite.active) continue;
 
             enemy.updateNamePosition();
-
-            if (enemy.moveToWaypoint(delta)) {
-                continue;
-            }
 
             const isUnstucking = enemy.avoidStuck(delta);
 
@@ -193,49 +176,34 @@ export default class EnemySystem {
             );
 
             if (dangerousBullet) {
-                enemy.dodgeFromPoint(dangerousBullet, 210);
+                enemy.dodgeFromPoint(dangerousBullet, 260);
                 continue;
             }
 
             weaponSystem.checkEnemyPickup(enemy);
 
-            if (
-                zoneSystem &&
-                zoneSystem.isOutsideZone(enemy.sprite)
-            ) {
+            if (this.scene.itemSystem) {
+                this.scene.itemSystem.checkEnemyPickup(enemy);
+            }
+
+            if (this.scene.chestSystem) {
+                this.scene.chestSystem.openNearestChestByEnemy(enemy);
+            }
+
+            if (zoneSystem && zoneSystem.isOutsideZone(enemy.sprite)) {
                 enemy.moveTo(
                     zoneSystem.getZoneCenterTarget(),
-                    170
+                    220
                 );
                 continue;
             }
 
             if (!enemy.hasWeapon()) {
-                const nearestWeapon =
-                    weaponSystem.findNearestWeapon(enemy.sprite);
-
-                if (nearestWeapon) {
-                    const canSeeWeapon = this.hasLineOfSight(
-                        enemy.sprite.x,
-                        enemy.sprite.y,
-                        nearestWeapon.x,
-                        nearestWeapon.y
-                    );
-
-                    if (canSeeWeapon) {
-                        enemy.moveTo(nearestWeapon, 150);
-                    } else {
-                        this.setRandomSafeWaypoint(enemy);
-                    }
-                } else {
-                    this.wander(enemy);
-                }
-
+                this.handleSearchWeapon(enemy, weaponSystem);
                 continue;
             }
 
-            const targetData =
-                this.findNearestTarget(enemy, playerSprite);
+            const targetData = this.findNearestTarget(enemy, playerSprite);
 
             if (!targetData) {
                 this.wander(enemy);
@@ -243,6 +211,13 @@ export default class EnemySystem {
             }
 
             const target = targetData.sprite;
+
+            const distanceToTarget = Phaser.Math.Distance.Between(
+                enemy.sprite.x,
+                enemy.sprite.y,
+                target.x,
+                target.y
+            );
 
             const canSeeTarget = this.hasLineOfSight(
                 enemy.sprite.x,
@@ -252,44 +227,137 @@ export default class EnemySystem {
             );
 
             if (!canSeeTarget) {
-                this.setRandomSafeWaypoint(enemy);
+                this.handleNoLineOfSight(enemy, target, weaponSystem);
                 continue;
             }
 
-            const distanceToTarget =
-                Phaser.Math.Distance.Between(
-                    enemy.sprite.x,
-                    enemy.sprite.y,
-                    target.x,
-                    target.y
-                );
+            this.handleCombat(
+                enemy,
+                target,
+                distanceToTarget,
+                bulletSystem
+            );
+        }
+    }
 
-            if (distanceToTarget < 160) {
-                enemy.moveAwayFrom(target, 150);
-            } else if (distanceToTarget <= 520) {
-                enemy.strafeAround(target, 130);
+    handleSearchWeapon(enemy, weaponSystem) {
+        const nearestWeapon = weaponSystem.findNearestWeapon(enemy.sprite);
 
-                const fireRate = this.getEnemyFireRate(enemy.currentWeapon);
+        if (nearestWeapon) {
+            const canSeeWeapon = this.hasLineOfSight(
+                enemy.sprite.x,
+                enemy.sprite.y,
+                nearestWeapon.x,
+                nearestWeapon.y
+            );
 
-                if (this.scene.time.now - enemy.lastShotTime < fireRate) {
-                    return;
-                }
-
-                enemy.lastShotTime = this.scene.time.now;
-
-                bulletSystem.shoot(
-                    enemy.sprite.x,
-                    enemy.sprite.y,
-                    target.x,
-                    target.y,
-                    "enemy",
-                    enemy,
-                    enemy.currentWeapon
-                );
+            if (canSeeWeapon) {
+                enemy.moveTo(nearestWeapon, 220);
             } else {
-                enemy.moveTo(target, 150);
+                this.setRandomSafeWaypoint(enemy);
+            }
+
+            return;
+        }
+
+        if (this.scene.chestSystem) {
+            const nearestChest =
+                this.scene.chestSystem.findNearestChest(enemy.sprite);
+
+            if (nearestChest) {
+                enemy.moveTo(nearestChest, 210);
+                return;
             }
         }
+
+        this.wander(enemy);
+    }
+
+    handleNoLineOfSight(enemy, target, weaponSystem) {
+        const distance = Phaser.Math.Distance.Between(
+            enemy.sprite.x,
+            enemy.sprite.y,
+            target.x,
+            target.y
+        );
+
+        if (distance < 700) {
+            enemy.strafeAround(target, 160);
+        } else {
+            this.handleSearchWeapon(enemy, weaponSystem);
+        }
+    }
+
+    handleCombat(enemy, target, distanceToTarget, bulletSystem) {
+        const attackRange = this.getAttackRange(enemy.currentWeapon);
+
+        if (distanceToTarget < 120) {
+            enemy.moveAwayFrom(target, 190);
+            return;
+        }
+
+        if (distanceToTarget <= attackRange) {
+            enemy.strafeAround(target, 175);
+
+            const fireRate = this.getEnemyFireRate(enemy.currentWeapon);
+
+            if (this.scene.time.now - enemy.lastShotTime < fireRate) {
+                return;
+            }
+
+            enemy.lastShotTime = this.scene.time.now;
+
+            const aim = this.getAimPosition(enemy, target);
+
+            // kalau ammo enemy habis, jangan tembak
+            if (
+                enemy.getCurrentAmmo &&
+                enemy.getCurrentAmmo() <= 0
+            ) {
+                enemy.currentWeapon = null;
+                this.handleSearchWeapon(enemy, this.scene.weaponSystem);
+                return;
+            }
+
+            bulletSystem.shoot(
+                enemy.sprite.x,
+                enemy.sprite.y,
+                aim.x,
+                aim.y,
+                "enemy",
+                enemy,
+                enemy.currentWeapon
+            );
+
+            // kurangi ammo enemy setelah tembak
+            if (enemy.useAmmo) {
+                enemy.useAmmo();
+            }
+
+            return;
+            return;
+        }
+
+        enemy.moveTo(target, 200);
+    }
+
+    getAimPosition(enemy, target) {
+        const weapon = enemy.currentWeapon;
+
+        let spread = 0;
+
+        if (weapon === "sniper") spread = 12;
+        else if (weapon === "ak") spread = 38;
+        else if (weapon === "m4" || weapon === "scar") spread = 30;
+        else if (weapon === "uzi" || weapon === "smg") spread = 45;
+        else if (weapon === "pistol") spread = 35;
+        else if (weapon === "rpg") spread = 25;
+        else spread = 35;
+
+        return {
+            x: target.x + Phaser.Math.Between(-spread, spread),
+            y: target.y + Phaser.Math.Between(-spread, spread)
+        };
     }
 
     findDangerousBullet(enemy, bulletSystem) {
@@ -306,7 +374,7 @@ export default class EnemySystem {
                 bullet.y
             );
 
-            if (distance < 120) {
+            if (distance < 180) {
                 return bullet;
             }
         }
@@ -358,44 +426,68 @@ export default class EnemySystem {
     wander(enemy) {
         if (!enemy.wanderTimer) {
             enemy.wanderTimer = 0;
-            enemy.wanderAngle = Phaser.Math.FloatBetween(
-                0,
-                Math.PI * 2
-            );
+            enemy.wanderAngle = Phaser.Math.FloatBetween(0, Math.PI * 2);
         }
 
         enemy.wanderTimer++;
 
-        if (enemy.wanderTimer > 120) {
-            enemy.wanderAngle = Phaser.Math.FloatBetween(
-                0,
-                Math.PI * 2
-            );
-
+        if (enemy.wanderTimer > 80) {
+            enemy.wanderAngle = Phaser.Math.FloatBetween(0, Math.PI * 2);
             enemy.wanderTimer = 0;
         }
 
         enemy.sprite.body.setVelocity(
-            Math.cos(enemy.wanderAngle) * 80,
-            Math.sin(enemy.wanderAngle) * 80
+            Math.cos(enemy.wanderAngle) * 105,
+            Math.sin(enemy.wanderAngle) * 105
         );
+    }
+
+    getAttackRange(weapon) {
+        const ranges = {
+            pistol: 520,
+            uzi: 480,
+            smg: 540,
+            ak: 720,
+            m4: 760,
+            scar: 740,
+            sniper: 1100,
+            rpg: 850,
+            bomb: 500
+        };
+
+        return ranges[weapon] || 600;
+    }
+
+    getEnemyFireRate(weapon) {
+        const rates = {
+            pistol: 380,
+            uzi: 95,
+            smg: 105,
+            ak: 145,
+            m4: 125,
+            scar: 135,
+            sniper: 1450,
+            rpg: 2200,
+            bomb: 1800
+        };
+
+        return rates[weapon] || 350;
     }
 
     getCooldownByWeapon(weaponType) {
         const cooldowns = {
-            pistol: 900,
-            uzi: 280,
-            smg: 350,
-            ak: 500,
-            m4: 450,
-            scar: 480,
-            sniper: 1300,
-            shotgun: 900,
-            rpg: 1600,
-            bomb: 1800
+            pistol: 700,
+            uzi: 240,
+            smg: 280,
+            ak: 420,
+            m4: 390,
+            scar: 410,
+            sniper: 1200,
+            rpg: 1400,
+            bomb: 1500
         };
 
-        return cooldowns[weaponType] || 700;
+        return cooldowns[weaponType] || 600;
     }
 
     getAliveCount() {
@@ -408,21 +500,5 @@ export default class EnemySystem {
         }
 
         return count;
-    }
-
-    getEnemyFireRate(weapon) {
-        const rates = {
-            pistol: 450,
-            uzi: 110,
-            smg: 120,
-            ak: 160,
-            m4: 140,
-            scar: 150,
-            sniper: 1600,
-            rpg: 1000,
-            bomb: 900
-        };
-
-        return rates[weapon] || 400;
     }
 }
