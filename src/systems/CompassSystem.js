@@ -116,7 +116,7 @@ export default class CompassSystem {
             "0",
             {
                 fontSize: "15px",
-                color: "#f3a922", 
+                color: "#f3a922",
                 fontStyle: "bold",
                 fontFamily: fontMono
             }
@@ -125,9 +125,9 @@ export default class CompassSystem {
         // Garis segitiga kecil penanda tengah (Center Notch)
         this.centerNotch = scene.add.triangle(
             0, -18,
-            0, 0, 
-            -5, -6, 
-            5, -6, 
+            0, 0,
+            -5, -6,
+            5, -6,
             0xf3a922, 1
         );
 
@@ -160,7 +160,7 @@ export default class CompassSystem {
 
     updateObjects(items, heading, isLabel) {
         // Skala kerapatan pergeseran kompas
-        const pixelsPerDegree = 3.2; 
+        const pixelsPerDegree = 3.2;
         const halfWidth = this.width / 2;
 
         for (let i = 0; i < items.length; i++) {

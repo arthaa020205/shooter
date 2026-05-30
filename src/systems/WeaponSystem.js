@@ -137,15 +137,15 @@ export default class WeaponSystem {
         weapon.visual = visual;
 
         if (this.weapons.length < 20) {
-    this.scene.tweens.add({
-        targets: weapon,
-        y: y - 4,
-        duration: 1000,
-        yoyo: true,
-        repeat: -1,
-        ease: "Sine.easeInOut"
-    });
-}
+            this.scene.tweens.add({
+                targets: weapon,
+                y: y - 4,
+                duration: 1000,
+                yoyo: true,
+                repeat: -1,
+                ease: "Sine.easeInOut"
+            });
+        }
 
         this.weapons.push(weapon);
     }

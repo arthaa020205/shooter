@@ -22,6 +22,70 @@ export default class GameScene extends Phaser.Scene {
         this.enemyCount = data.enemyCount || 10;
     }
 
+    preload() {
+        this.load.audio("explosionSound", "assets/sounds/explosion.mp3");
+
+        this.load.audio(
+            "chestOpenSound",
+            "assets/sounds/chest_open.mp3"
+        );
+
+        this.load.audio(
+            "awmSound",
+            "assets/sounds/awm.mp3"
+        );
+
+        this.load.audio(
+            "scarSound",
+            "assets/sounds/scar.mp3"
+        );
+
+        this.load.audio(
+            "ak47Sound",
+            "assets/sounds/ak47.mp3"
+        );
+
+        this.load.audio(
+            "uziSound",
+            "assets/sounds/uzi.mp3"
+        );
+
+        this.load.audio(
+            "m4Sound",
+            "assets/sounds/m4.mp3"
+        );
+
+        this.load.audio(
+            "smgSound",
+            "assets/sounds/smg.mp3"
+        );
+
+        this.load.audio(
+            "pistolSound",
+            "assets/sounds/pistol.mp3"
+        );
+
+        this.load.audio(
+            "rpgSound",
+            "assets/sounds/rpg.mp3"
+        );
+
+        this.load.audio(
+            "reloadSound",
+            "assets/sounds/reload.mp3"
+        );
+
+        this.load.audio(
+            "victorySound",
+            "assets/sounds/victory.mp3"
+        );
+
+        this.load.audio(
+            "loseSound",
+            "assets/sounds/lose.mp3"
+        );
+    }
+
     create() {
         this.score = 0;
         this.kills = 0;
@@ -103,7 +167,7 @@ export default class GameScene extends Phaser.Scene {
                 }
             );
 
-}
+        }
 
         this.keys = this.input.keyboard.addKeys({
             up: Phaser.Input.Keyboard.KeyCodes.W,
@@ -122,80 +186,80 @@ export default class GameScene extends Phaser.Scene {
             five: Phaser.Input.Keyboard.KeyCodes.FIVE
         });
 
-       this.input.on("pointerdown", () => {
+        this.input.on("pointerdown", () => {
             this.isMouseDown = true;
         });
 
         this.input.on("pointerup", () => {
             this.isMouseDown = false;
         });
-            }
-
-    shootPlayer(pointer) {
-    if (this.gameEnded) return;
-    if (!this.player.hasWeapon()) return;
-    if (this.player.isReloading) return;
-    if (!this.player.canShoot) return;
-
-    if (this.player.getCurrentAmmo() <= 0) {
-        this.player.reload();
-        return;
     }
 
-    const currentWeapon = this.player.getCurrentWeapon();
+    shootPlayer(pointer) {
+        if (this.gameEnded) return;
+        if (!this.player.hasWeapon()) return;
+        if (this.player.isReloading) return;
+        if (!this.player.canShoot) return;
 
-    let spreadAngle = 0;
+        if (this.player.getCurrentAmmo() <= 0) {
+            this.player.reload();
+            return;
+        }
 
-    if (currentWeapon === "ak") spreadAngle = 0.08;
-    else if (currentWeapon === "m4" || currentWeapon === "scar") spreadAngle = 0.04;
-    else if (currentWeapon === "uzi" || currentWeapon === "smg") spreadAngle = 0.06;
-    else if (currentWeapon === "sniper") spreadAngle = 0.002;
-    else if (currentWeapon === "pistol") spreadAngle = 0.03;
-    else if (currentWeapon === "shotgun") spreadAngle = 0.12;
-    else if (currentWeapon === "rpg") spreadAngle = 0.015;
+        const currentWeapon = this.player.getCurrentWeapon();
 
-    const baseAngle = Phaser.Math.Angle.Between(
-        this.player.sprite.x,
-        this.player.sprite.y,
-        pointer.worldX,
-        pointer.worldY
-    );
+        let spreadAngle = 0;
 
-    const finalAngle =
-        baseAngle + (Math.random() - 0.5) * spreadAngle;
+        if (currentWeapon === "ak") spreadAngle = 0.08;
+        else if (currentWeapon === "m4" || currentWeapon === "scar") spreadAngle = 0.04;
+        else if (currentWeapon === "uzi" || currentWeapon === "smg") spreadAngle = 0.06;
+        else if (currentWeapon === "sniper") spreadAngle = 0.002;
+        else if (currentWeapon === "pistol") spreadAngle = 0.03;
+        else if (currentWeapon === "shotgun") spreadAngle = 0.12;
+        else if (currentWeapon === "rpg") spreadAngle = 0.015;
 
-    const targetDistance = Phaser.Math.Distance.Between(
-        this.player.sprite.x,
-        this.player.sprite.y,
-        pointer.worldX,
-        pointer.worldY
-    );
+        const baseAngle = Phaser.Math.Angle.Between(
+            this.player.sprite.x,
+            this.player.sprite.y,
+            pointer.worldX,
+            pointer.worldY
+        );
 
-    const targetX =
-        this.player.sprite.x + Math.cos(finalAngle) * targetDistance;
+        const finalAngle =
+            baseAngle + (Math.random() - 0.5) * spreadAngle;
 
-    const targetY =
-        this.player.sprite.y + Math.sin(finalAngle) * targetDistance;
+        const targetDistance = Phaser.Math.Distance.Between(
+            this.player.sprite.x,
+            this.player.sprite.y,
+            pointer.worldX,
+            pointer.worldY
+        );
 
-    this.bulletSystem.shoot(
-        this.player.sprite.x,
-        this.player.sprite.y,
-        targetX,
-        targetY,
-        "player",
-        this.player,
-        currentWeapon
-    );
+        const targetX =
+            this.player.sprite.x + Math.cos(finalAngle) * targetDistance;
 
-    this.player.useAmmo();
+        const targetY =
+            this.player.sprite.y + Math.sin(finalAngle) * targetDistance;
 
-    if (currentWeapon === "sniper") {
+        this.bulletSystem.shoot(
+            this.player.sprite.x,
+            this.player.sprite.y,
+            targetX,
+            targetY,
+            "player",
+            this.player,
+            currentWeapon
+        );
 
-    this.player.startShootCooldown(1500);
+        this.player.useAmmo();
 
-}
-    this.uiSystem.updateAmmo(this.player);
-}
+        if (currentWeapon === "sniper") {
+
+            this.player.startShootCooldown(1500);
+
+        }
+        this.uiSystem.updateAmmo(this.player);
+    }
 
     update(time, delta) {
         if (this.gameEnded) return;
@@ -211,96 +275,96 @@ export default class GameScene extends Phaser.Scene {
         }
 
         // =========================================
-// RELOAD
-// =========================================
-if (
-    Phaser.Input.Keyboard.JustDown(
-        this.keys.reload
-    )
-) {
+        // RELOAD
+        // =========================================
+        if (
+            Phaser.Input.Keyboard.JustDown(
+                this.keys.reload
+            )
+        ) {
 
-    this.player.reload();
+            this.player.reload();
 
-}
+        }
 
-// =========================================
-// UI UPDATE
-// =========================================
-this.uiSystem.updateAmmo(
-    this.player
-);
-
-this.uiSystem.updateReloadAnimation();
-
-// =========================================
-// PICKUP SYSTEM (F)
-// =========================================
-// =========================================
-// PICKUP SYSTEM (F)
-// =========================================
-if (
-    Phaser.Input.Keyboard.JustDown(
-        this.keys.pickup
-    )
-) {
-
-    // =========================
-    // OPEN CHEST
-    // =========================
-    const chestOpened =
-        this.chestSystem.openNearestChestByPlayer(
-            this.player
-        );
-
-    // kalau berhasil buka chest,
-    // hentikan dulu proses pickup
-    if (chestOpened) {
-        return;
-    }
-
-    // =========================
-    // WEAPON PICKUP
-    // =========================
-    const weaponPicked =
-        this.weaponSystem.checkPlayerPickup(
-            this.player
-        );
-
-    if (weaponPicked) {
-
-        this.uiSystem.updateWeaponBar(
-            this.player
-        );
-
+        // =========================================
+        // UI UPDATE
+        // =========================================
         this.uiSystem.updateAmmo(
             this.player
         );
 
-        return;
+        this.uiSystem.updateReloadAnimation();
 
-    }
+        // =========================================
+        // PICKUP SYSTEM (F)
+        // =========================================
+        // =========================================
+        // PICKUP SYSTEM (F)
+        // =========================================
+        if (
+            Phaser.Input.Keyboard.JustDown(
+                this.keys.pickup
+            )
+        ) {
 
-    // =========================
-    // ITEM PICKUP
-    // =========================
-    const itemPicked =
-        this.itemSystem.checkPlayerPickup(
-            this.player
-        );
+            // =========================
+            // OPEN CHEST
+            // =========================
+            const chestOpened =
+                this.chestSystem.openNearestChestByPlayer(
+                    this.player
+                );
 
-    if (itemPicked) {
+            // kalau berhasil buka chest,
+            // hentikan dulu proses pickup
+            if (chestOpened) {
+                return;
+            }
 
-        this.uiSystem.updateHP(
-            this.player.hp
-        );
+            // =========================
+            // WEAPON PICKUP
+            // =========================
+            const weaponPicked =
+                this.weaponSystem.checkPlayerPickup(
+                    this.player
+                );
 
-        this.uiSystem.updateArmorIcons(
-            this.player
-        );
+            if (weaponPicked) {
 
-    }
+                this.uiSystem.updateWeaponBar(
+                    this.player
+                );
 
-}
+                this.uiSystem.updateAmmo(
+                    this.player
+                );
+
+                return;
+
+            }
+
+            // =========================
+            // ITEM PICKUP
+            // =========================
+            const itemPicked =
+                this.itemSystem.checkPlayerPickup(
+                    this.player
+                );
+
+            if (itemPicked) {
+
+                this.uiSystem.updateHP(
+                    this.player.hp
+                );
+
+                this.uiSystem.updateArmorIcons(
+                    this.player
+                );
+
+            }
+
+        }
 
         const zoneDamage = this.zoneSystem.update(this.player, delta);
 
@@ -309,35 +373,35 @@ if (
         );
 
         const nearWeapon = this.weaponSystem.findNearestWeapon(this.player.sprite);
-const nearItem = this.itemSystem.findNearestItem
-    ? this.itemSystem.findNearestItem(this.player.sprite)
-    : null;
+        const nearItem = this.itemSystem.findNearestItem
+            ? this.itemSystem.findNearestItem(this.player.sprite)
+            : null;
 
-let showPickup = false;
+        let showPickup = false;
 
-if (nearWeapon) {
-    const d = Phaser.Math.Distance.Between(
-        this.player.sprite.x,
-        this.player.sprite.y,
-        nearWeapon.x,
-        nearWeapon.y
-    );
+        if (nearWeapon) {
+            const d = Phaser.Math.Distance.Between(
+                this.player.sprite.x,
+                this.player.sprite.y,
+                nearWeapon.x,
+                nearWeapon.y
+            );
 
-    if (d < 70) showPickup = true;
-}
+            if (d < 70) showPickup = true;
+        }
 
-if (nearItem) {
-    const d = Phaser.Math.Distance.Between(
-        this.player.sprite.x,
-        this.player.sprite.y,
-        nearItem.x,
-        nearItem.y
-    );
+        if (nearItem) {
+            const d = Phaser.Math.Distance.Between(
+                this.player.sprite.x,
+                this.player.sprite.y,
+                nearItem.x,
+                nearItem.y
+            );
 
-    if (d < 70) showPickup = true;
-}
+            if (d < 70) showPickup = true;
+        }
 
-this.uiSystem.showPickupText(showPickup);
+        this.uiSystem.showPickupText(showPickup);
 
         if (zoneDamage) {
             this.uiSystem.updateHP(this.player.hp);
@@ -349,7 +413,7 @@ this.uiSystem.showPickupText(showPickup);
         }
 
         this.enemySystem.update(
-            
+
             this.player.sprite,
             this.zoneSystem,
             this.weaponSystem,
@@ -357,41 +421,41 @@ this.uiSystem.showPickupText(showPickup);
             delta
         );
         for (let i = 0; i < this.enemySystem.enemies.length; i++) {
-    const enemy = this.enemySystem.enemies[i];
+            const enemy = this.enemySystem.enemies[i];
 
-    const nearChest = this.chestSystem.findNearestChest(this.player.sprite);
+            const nearChest = this.chestSystem.findNearestChest(this.player.sprite);
 
-if (nearChest) {
-    const d = Phaser.Math.Distance.Between(
-        this.player.sprite.x,
-        this.player.sprite.y,
-        nearChest.x,
-        nearChest.y
-    );
+            if (nearChest) {
+                const d = Phaser.Math.Distance.Between(
+                    this.player.sprite.x,
+                    this.player.sprite.y,
+                    nearChest.x,
+                    nearChest.y
+                );
 
-    if (d < 80) {
-        showPickup = true;
-    }
-}
+                if (d < 80) {
+                    showPickup = true;
+                }
+            }
 
-    if (!enemy.sprite.active) continue;
+            if (!enemy.sprite.active) continue;
 
-    this.chestSystem.openNearestChestByEnemy(enemy);
-    this.weaponSystem.checkEnemyPickup(enemy);
-    this.itemSystem.checkEnemyPickup(enemy);
-}
+            this.chestSystem.openNearestChestByEnemy(enemy);
+            this.weaponSystem.checkEnemyPickup(enemy);
+            this.itemSystem.checkEnemyPickup(enemy);
+        }
 
         for (let i = 0; i < this.enemySystem.enemies.length; i++) {
 
-    const enemy = this.enemySystem.enemies[i];
+            const enemy = this.enemySystem.enemies[i];
 
-    if (!enemy.sprite.active) continue;
+            if (!enemy.sprite.active) continue;
 
-    this.itemSystem.checkEnemyPickup(
-        enemy
-    );
+            this.itemSystem.checkEnemyPickup(
+                enemy
+            );
 
-}
+        }
 
         this.uiSystem.updateAlive(
             this.enemySystem.getAliveCount() + 1
@@ -649,61 +713,97 @@ if (nearChest) {
     }
 
     showLoseResult() {
-        if (this.gameEnded) return;
+    if (this.gameEnded) return;
 
-        this.gameEnded = true;
+    this.gameEnded = true;
 
-        const placement = this.enemySystem.getAliveCount() + 1;
+    this.sound.play("loseSound", {
+        volume: 0.7
+    });
 
-        this.endGameSystem.showResult(
-            "GAME OVER",
-            placement,
-            this.kills,
-            this.totalDamage
-        );
-    }
+    const placement = this.enemySystem.getAliveCount() + 1;
 
-    showWinResult() {
-        if (this.gameEnded) return;
-
-        this.gameEnded = true;
-
-        this.endGameSystem.showResult(
-            "YOU WIN",
-            1,
-            this.kills,
-            this.totalDamage
-        );
-    }
-
-    tryAutoShoot(time) {
-    if (!this.player.hasWeapon()) return;
-
-    const weapon = this.player.getCurrentWeapon();
-    const fireRate = this.getFireRate(weapon);
-
-    if (time - this.lastShotTime < fireRate) {
-        return;
-    }
-
-    this.lastShotTime = time;
-
-    this.shootPlayer(this.input.activePointer);
+    this.endGameSystem.showResult(
+        "GAME OVER",
+        placement,
+        this.kills,
+        this.totalDamage
+    );
 }
 
-getFireRate(weapon) {
-    const rates = {
-        pistol: 350,
-        uzi: 90,
-        smg: 100,
-        ak: 140,
-        m4: 120,
-        scar: 130,
-        sniper: 1400,
-        rpg: 900,
-        bomb: 700
-    };
+    showWinResult() {
 
-    return rates[weapon] || 300;
+    if (this.gameEnded) return;
+
+    this.gameEnded = true;
+
+    // SOUND MENANG
+    this.sound.play("victorySound", {
+        volume: 0.7
+    });
+
+    this.endGameSystem.showResult(
+        "YOU WIN",
+        1,
+        this.kills,
+        this.totalDamage
+    );
+
+}
+
+    tryAutoShoot(time) {
+        if (!this.player.hasWeapon()) return;
+
+        const weapon = this.player.getCurrentWeapon();
+        const fireRate = this.getFireRate(weapon);
+
+        if (time - this.lastShotTime < fireRate) {
+            return;
+        }
+
+        this.lastShotTime = time;
+
+        this.shootPlayer(this.input.activePointer);
+    }
+
+    getFireRate(weapon) {
+        const rates = {
+            pistol: 350,
+            uzi: 90,
+            smg: 100,
+            ak: 140,
+            m4: 120,
+            scar: 130,
+            sniper: 1400,
+            rpg: 900,
+            bomb: 700
+        };
+
+        return rates[weapon] || 300;
+    }
+
+    playSpatialSound(key, x, y, maxDistance = 1200, maxVolume = 0.8) {
+    if (!this.player || !this.player.sprite) return;
+
+    const distance = Phaser.Math.Distance.Between(
+        this.player.sprite.x,
+        this.player.sprite.y,
+        x,
+        y
+    );
+
+    let volume = 1 - distance / maxDistance;
+
+    volume = Phaser.Math.Clamp(
+        volume,
+        0,
+        1
+    );
+
+    if (volume <= 0) return;
+
+    this.sound.play(key, {
+        volume: volume * maxVolume
+    });
 }
 }

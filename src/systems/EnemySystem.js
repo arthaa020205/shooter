@@ -271,21 +271,21 @@ export default class EnemySystem {
 
                 const fireRate = this.getEnemyFireRate(enemy.currentWeapon);
 
-if (this.scene.time.now - enemy.lastShotTime < fireRate) {
-    return;
-}
+                if (this.scene.time.now - enemy.lastShotTime < fireRate) {
+                    return;
+                }
 
-enemy.lastShotTime = this.scene.time.now;
+                enemy.lastShotTime = this.scene.time.now;
 
-bulletSystem.shoot(
-    enemy.sprite.x,
-    enemy.sprite.y,
-    target.x,
-    target.y,
-    "enemy",
-    enemy,
-    enemy.currentWeapon
-);
+                bulletSystem.shoot(
+                    enemy.sprite.x,
+                    enemy.sprite.y,
+                    target.x,
+                    target.y,
+                    "enemy",
+                    enemy,
+                    enemy.currentWeapon
+                );
             } else {
                 enemy.moveTo(target, 150);
             }
@@ -411,18 +411,18 @@ bulletSystem.shoot(
     }
 
     getEnemyFireRate(weapon) {
-    const rates = {
-        pistol: 450,
-        uzi: 110,
-        smg: 120,
-        ak: 160,
-        m4: 140,
-        scar: 150,
-        sniper: 1600,
-        rpg: 1000,
-        bomb: 900
-    };
+        const rates = {
+            pistol: 450,
+            uzi: 110,
+            smg: 120,
+            ak: 160,
+            m4: 140,
+            scar: 150,
+            sniper: 1600,
+            rpg: 1000,
+            bomb: 900
+        };
 
-    return rates[weapon] || 400;
-}
+        return rates[weapon] || 400;
+    }
 }

@@ -28,7 +28,7 @@ export default class MapSystem {
 
     createGrid() {
         const graphics = this.scene.add.graphics();
-        
+
         // UBAH: Garis grid menggunakan warna putih transparan tipis agar kontrasnya bersih dan cerah
         graphics.lineStyle(1, 0xffffff, 0.12);
 
@@ -54,7 +54,7 @@ export default class MapSystem {
 
         // 2. Batang pohon tengah
         const trunk = this.scene.add.circle(x, y, 12, 0x5e3a1e);
-        
+
         // 3. Daun Lapisan Luar (Hijau Rimba Segar)
         const leafBase = this.scene.add.circle(x, y, 45, 0x1e6f2d);
         leafBase.setStrokeStyle(2, 0x12471b, 0.6);
@@ -91,9 +91,9 @@ export default class MapSystem {
         roofInner.setStrokeStyle(2, 0x873220, 1);
 
         // 4. Struktur Ventilasi / Dak Beton Atas
-        const vent = this.scene.add.rectangle(x - width/4, y - height/4, 35, 35, 0xd6c2a1);
+        const vent = this.scene.add.rectangle(x - width / 4, y - height / 4, 35, 35, 0xd6c2a1);
         vent.setStrokeStyle(1, 0xa19075, 1);
-        const ventInner = this.scene.add.rectangle(x - width/4, y - height/4, 25, 25, 0x3a3f45);
+        const ventInner = this.scene.add.rectangle(x - width / 4, y - height / 4, 25, 25, 0x3a3f45);
 
         const bldGroup = [shadow, roofInner, vent, ventInner];
         bldGroup.forEach(el => el.setDepth(20));
@@ -111,7 +111,7 @@ export default class MapSystem {
         this.scene.physics.add.existing(cover, true);
         this.obstacles.push(cover);
         cover.setStrokeStyle(2, 0x6e3916);
-        
+
         // 3. PERBAIKAN: Membuat garis silang dekorasi yang presisi menggunakan Graphics
         // Cara ini dijamin mengunci garis tepat di dalam batas ukuran peti, tidak peduli ukuran panjang/lebarnya
         const crossGraphics = this.scene.add.graphics();

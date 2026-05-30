@@ -78,12 +78,12 @@ export default class Player {
         this.weaponVisual = null;
 
         this.sprite.add([
-        this.shadow,
-        this.body,
-        this.helmet,
-        this.visor,
-        this.weaponSprite
-]);
+            this.shadow,
+            this.body,
+            this.helmet,
+            this.visor,
+            this.weaponSprite
+        ]);
 
         this.applyCharacterSkin();
 
@@ -95,56 +95,56 @@ export default class Player {
     }
 
     heal(amount) {
-    this.hp += amount;
+        this.hp += amount;
 
-    if (this.hp > 100) {
-        this.hp = 100;
-    }
-
-    if (this.scene.uiSystem) {
-        this.scene.uiSystem.updateHP(this.hp);
-    }
-}
-
-equipHelmet() {
-    this.hasHelmet = true;
-
-    this.helmet.fillColor = 0x555555;
-}
-
-equipVest() {
-    this.hasVest = true;
-
-    this.body.setStrokeStyle(5, 0x4444ff);
-}
-
-takeDamage(amount) {
-    let finalDamage = amount;
-
-    if (this.hasHelmet) {
-        finalDamage -= 3;
-    }
-
-    if (this.hasVest) {
-        finalDamage -= 5;
-    }
-
-    if (finalDamage < 1) {
-        finalDamage = 1;
-    }
-
-    this.hp -= finalDamage;
-
-    const originalColor = this.body.fillColor;
-
-    this.body.fillColor = 0xff4444;
-
-    this.scene.time.delayedCall(120, () => {
-        if (this.hp > 0) {
-            this.body.fillColor = originalColor;
+        if (this.hp > 100) {
+            this.hp = 100;
         }
-    });
-}
+
+        if (this.scene.uiSystem) {
+            this.scene.uiSystem.updateHP(this.hp);
+        }
+    }
+
+    equipHelmet() {
+        this.hasHelmet = true;
+
+        this.helmet.fillColor = 0x555555;
+    }
+
+    equipVest() {
+        this.hasVest = true;
+
+        this.body.setStrokeStyle(5, 0x4444ff);
+    }
+
+    takeDamage(amount) {
+        let finalDamage = amount;
+
+        if (this.hasHelmet) {
+            finalDamage -= 3;
+        }
+
+        if (this.hasVest) {
+            finalDamage -= 5;
+        }
+
+        if (finalDamage < 1) {
+            finalDamage = 1;
+        }
+
+        this.hp -= finalDamage;
+
+        const originalColor = this.body.fillColor;
+
+        this.body.fillColor = 0xff4444;
+
+        this.scene.time.delayedCall(120, () => {
+            if (this.hp > 0) {
+                this.body.fillColor = originalColor;
+            }
+        });
+    }
 
     move(keys) {
         const speed = 250;
@@ -194,28 +194,46 @@ takeDamage(amount) {
     }
 
     pickupWeapon(weaponType) {
-    const maxSlots = 5;
+        const maxSlots = 5;
 
-    const config =
-        this.scene.bulletSystem.getWeaponConfig(
-            weaponType
-        );
+        const config =
+            this.scene.bulletSystem.getWeaponConfig(
+                weaponType
+            );
 
-    // kalau senjata yang sama sudah ada, cukup pindah ke slot itu
-    if (this.inventory.includes(weaponType)) {
-        this.currentWeaponIndex =
-            this.inventory.indexOf(weaponType);
+        // kalau senjata yang sama sudah ada, cukup pindah ke slot itu
+        if (this.inventory.includes(weaponType)) {
+            this.currentWeaponIndex =
+                this.inventory.indexOf(weaponType);
 
-        this.updateWeaponVisual();
-        return;
-    }
+            this.updateWeaponVisual();
+            return;
+        }
 
-    // kalau slot masih kosong, tambah senjata baru
-    if (this.inventory.length < maxSlots) {
-        this.inventory.push(weaponType);
+        // kalau slot masih kosong, tambah senjata baru
+        if (this.inventory.length < maxSlots) {
+            this.inventory.push(weaponType);
 
-        this.currentWeaponIndex =
-            this.inventory.length - 1;
+            this.currentWeaponIndex =
+                this.inventory.length - 1;
+
+            this.weaponAmmo[weaponType] =
+                weaponType === "bomb"
+                    ? 3
+                    : config.ammo;
+
+            this.updateWeaponVisual();
+            return;
+        }
+
+        // kalau inventory penuh, ganti senjata di slot aktif
+        const oldWeapon =
+            this.inventory[this.currentWeaponIndex];
+
+        delete this.weaponAmmo[oldWeapon];
+
+        this.inventory[this.currentWeaponIndex] =
+            weaponType;
 
         this.weaponAmmo[weaponType] =
             weaponType === "bomb"
@@ -223,25 +241,7 @@ takeDamage(amount) {
                 : config.ammo;
 
         this.updateWeaponVisual();
-        return;
     }
-
-    // kalau inventory penuh, ganti senjata di slot aktif
-    const oldWeapon =
-        this.inventory[this.currentWeaponIndex];
-
-    delete this.weaponAmmo[oldWeapon];
-
-    this.inventory[this.currentWeaponIndex] =
-        weaponType;
-
-    this.weaponAmmo[weaponType] =
-        weaponType === "bomb"
-            ? 3
-            : config.ammo;
-
-    this.updateWeaponVisual();
-}
 
     hasWeapon() {
         return this.inventory.length > 0;
@@ -263,50 +263,51 @@ takeDamage(amount) {
     }
 
     updateWeaponVisual() {
-    const weapon = this.getCurrentWeapon();
+        const weapon = this.getCurrentWeapon();
 
-    if (this.weaponVisual) {
-        this.weaponVisual.destroy();
-        this.weaponVisual = null;
+        if (this.weaponVisual) {
+            this.weaponVisual.destroy();
+            this.weaponVisual = null;
+        }
+
+        if (!weapon) return;
+
+        this.weaponVisual = WeaponVisualFactory.create(
+            this.scene,
+            weapon,
+            0,
+            0,
+            0.85
+        );
+
+        this.weaponSprite.add(this.weaponVisual);
     }
 
-    if (!weapon) return;
+    getCurrentAmmo() {
 
-    this.weaponVisual = WeaponVisualFactory.create(
-        this.scene,
-        weapon,
-        0,
-        0,
-        0.85
-    );
+        const weapon = this.getCurrentWeapon();
 
-    this.weaponSprite.add(this.weaponVisual);
-}
+        if (!weapon) return 0;
 
-   getCurrentAmmo() {
+        return this.weaponAmmo[weapon] || 0;
+    }
 
-    const weapon = this.getCurrentWeapon();
+    useAmmo() {
 
-    if (!weapon) return 0;
+        const weapon = this.getCurrentWeapon();
 
-    return this.weaponAmmo[weapon] || 0;
-}
+        if (!weapon) return;
 
-useAmmo() {
+        if (this.weaponAmmo[weapon] > 0) {
 
-    const weapon = this.getCurrentWeapon();
+            this.weaponAmmo[weapon]--;
 
-    if (!weapon) return;
-
-    if (this.weaponAmmo[weapon] > 0) {
-
-        this.weaponAmmo[weapon]--;
+        }
 
     }
 
-}
+   reload() {
 
-reload() {
     if (this.isReloading) return;
 
     const weapon = this.getCurrentWeapon();
@@ -318,7 +319,8 @@ reload() {
         return;
     }
 
-    const config = this.scene.bulletSystem.getWeaponConfig(weapon);
+    const config =
+        this.scene.bulletSystem.getWeaponConfig(weapon);
 
     if (this.weaponAmmo[weapon] >= config.ammo) {
         return;
@@ -326,16 +328,31 @@ reload() {
 
     this.isReloading = true;
 
-    this.scene.uiSystem.startReloadAnimation(config.reload);
+    // SOUND RELOAD
+    this.scene.playSpatialSound(
+        "reloadSound",
+        this.sprite.x,
+        this.sprite.y,
+        700,
+        0.4
+    );
+
+    this.scene.uiSystem.startReloadAnimation(
+        config.reload
+    );
 
     this.scene.time.delayedCall(config.reload, () => {
+
         this.weaponAmmo[weapon] = config.ammo;
 
         this.isReloading = false;
 
         this.scene.uiSystem.stopReloadAnimation();
+
         this.scene.uiSystem.updateAmmo(this);
+
     });
+
 }
 
     applyCharacterSkin() {
@@ -410,10 +427,10 @@ reload() {
     }
 
     startShootCooldown(duration) {
-    this.canShoot = false;
+        this.canShoot = false;
 
-    this.scene.time.delayedCall(duration, () => {
-        this.canShoot = true;
-    });
-}
+        this.scene.time.delayedCall(duration, () => {
+            this.canShoot = true;
+        });
+    }
 }

@@ -202,6 +202,13 @@ export default class ChestSystem {
         if (!chest.active || chest.opened) return;
 
         chest.opened = true;
+        this.scene.playSpatialSound(
+            "chestOpenSound",
+            chest.x,
+            chest.y,
+            900,
+            0.7
+        );
         chest.active = false;
 
         chest.box.fillColor = 0x4a2a12;

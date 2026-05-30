@@ -240,99 +240,99 @@ export default class ItemSystem {
 
     checkEnemyPickup(enemy) {
 
-    for (let i = 0; i < this.items.length; i++) {
+        for (let i = 0; i < this.items.length; i++) {
 
-        const item = this.items[i];
+            const item = this.items[i];
 
-        if (!item.active) continue;
+            if (!item.active) continue;
 
-        const distance = Phaser.Math.Distance.Between(
-            enemy.sprite.x,
-            enemy.sprite.y,
-            item.x,
-            item.y
-        );
-
-        if (distance < 55) {
-
-            this.applyItemToEnemy(
-                enemy,
-                item.itemType
+            const distance = Phaser.Math.Distance.Between(
+                enemy.sprite.x,
+                enemy.sprite.y,
+                item.x,
+                item.y
             );
 
-            this.removeItem(item);
+            if (distance < 55) {
 
-            return true;
+                this.applyItemToEnemy(
+                    enemy,
+                    item.itemType
+                );
+
+                this.removeItem(item);
+
+                return true;
+            }
         }
+
+        return false;
     }
 
-    return false;
-}
+    applyItemToEnemy(enemy, type) {
 
-applyItemToEnemy(enemy, type) {
+        if (type === "medkit") {
 
-    if (type === "medkit") {
+            // Enemy cuma heal kalau HP rendah
+            if (enemy.hp < 50) {
 
-        // Enemy cuma heal kalau HP rendah
-        if (enemy.hp < 50) {
+                enemy.hp += 35;
 
-            enemy.hp += 35;
+                if (enemy.hp > 100) {
+                    enemy.hp = 100;
+                }
 
-            if (enemy.hp > 100) {
-                enemy.hp = 100;
             }
 
         }
 
-    }
+        if (type === "helmet") {
 
-    if (type === "helmet") {
+            enemy.hasHelmet = true;
 
-        enemy.hasHelmet = true;
+            if (enemy.helmet) {
+                enemy.helmet.fillColor = 0x555555;
+            }
 
-        if (enemy.helmet) {
-            enemy.helmet.fillColor = 0x555555;
         }
 
+        if (type === "vest") {
+
+            enemy.hasVest = true;
+
+            if (enemy.body) {
+                enemy.body.setStrokeStyle(
+                    5,
+                    0x4444ff
+                );
+            }
+
+        }
+
+
     }
+    findNearestItem(sprite) {
+        let nearestItem = null;
+        let nearestDistance = Infinity;
 
-    if (type === "vest") {
+        for (let i = 0; i < this.items.length; i++) {
+            const item = this.items[i];
 
-        enemy.hasVest = true;
+            if (!item.active) continue;
 
-        if (enemy.body) {
-            enemy.body.setStrokeStyle(
-                5,
-                0x4444ff
+            const distance = Phaser.Math.Distance.Between(
+                sprite.x,
+                sprite.y,
+                item.x,
+                item.y
             );
+
+            if (distance < nearestDistance) {
+                nearestDistance = distance;
+                nearestItem = item;
+            }
         }
 
+        return nearestItem;
     }
-
-    
-}
-findNearestItem(sprite) {
-    let nearestItem = null;
-    let nearestDistance = Infinity;
-
-    for (let i = 0; i < this.items.length; i++) {
-        const item = this.items[i];
-
-        if (!item.active) continue;
-
-        const distance = Phaser.Math.Distance.Between(
-            sprite.x,
-            sprite.y,
-            item.x,
-            item.y
-        );
-
-        if (distance < nearestDistance) {
-            nearestDistance = distance;
-            nearestItem = item;
-        }
-    }
-
-    return nearestItem;
-}
 }

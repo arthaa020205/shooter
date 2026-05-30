@@ -229,42 +229,68 @@ export default class UISystem {
         ).setOrigin(0, 0.5);
 
         // =========================
-// ARMOR ICONS
-// =========================
-this.helmetIcon = scene.add.text(
-    w / 2 + this.hpMaxWidth / 2 + 28,
-    hpY,
-    "⛑",
-    {
-        fontSize: "30px",
-        color: "#555555",
-        fontStyle: "bold"
-    }
-).setOrigin(0.5);
+        // ARMOR ICONS
+        // =========================
+        this.helmetIcon = scene.add.text(
+            w / 2 + this.hpMaxWidth / 2 + 28,
+            hpY,
+            "⛑",
+            {
+                fontSize: "30px",
+                color: "#555555",
+                fontStyle: "bold"
+            }
+        ).setOrigin(0.5);
 
-this.vestIcon = scene.add.text(
-    w / 2 + this.hpMaxWidth / 2 + 68,
-    hpY,
-    "🛡",
-    {
-        fontSize: "30px",
-        color: "#555555",
-        fontStyle: "bold"
-    }
-).setOrigin(0.5);
+        this.vestIcon = scene.add.text(
+            w / 2 + this.hpMaxWidth / 2 + 68,
+            hpY,
+            "🛡",
+            {
+                fontSize: "30px",
+                color: "#555555",
+                fontStyle: "bold"
+            }
+        ).setOrigin(0.5);
 
-this.pickupText = scene.add.text(
-    w / 2,
-    h - 500,
-    "PRESS F TO PICKUP",
-    {
-        fontSize: "16px",
-        color: "#ffffff",
-        fontStyle: "bold"
-    }
-).setOrigin(0.5);
+        this.pickupText = scene.add.text(
+            w / 2,
+            h - 500,
+            "PRESS F TO PICKUP",
+            {
+                fontSize: "16px",
+                color: "#ffffff",
+                fontStyle: "bold"
+            }
+        ).setOrigin(0.5);
 
-this.pickupText.setVisible(false);
+        this.pickupText.setVisible(false);
+
+        this.menuButton = scene.add.rectangle(
+            70,
+            scene.scale.height - 45,
+            115,
+            38,
+            0x0f141c,
+            0.85
+        ).setInteractive({ useHandCursor: true });
+
+        this.menuButton.setStrokeStyle(2, 0xf3a922);
+
+        this.menuButtonText = scene.add.text(
+            70,
+            scene.scale.height - 45,
+            "MENU",
+            {
+                fontSize: "16px",
+                color: "#ffffff",
+                fontStyle: "bold"
+            }
+        ).setOrigin(0.5);
+
+        this.menuButton.on("pointerdown", () => {
+            this.openPauseMenu();
+        });
 
         // ==========================================
         // FIXED UI
@@ -279,6 +305,9 @@ this.pickupText.setVisible(false);
             this.helmetIcon,
             this.vestIcon,
             this.pickupText,
+
+            this.menuButton,
+            this.menuButtonText,
 
             this.zoneBg,
             this.zoneText,
@@ -307,6 +336,8 @@ this.pickupText.setVisible(false);
         }
 
         for (let i = 0; i < fixedElements.length; i++) {
+            if (!fixedElements[i]) continue;
+
             fixedElements[i].setScrollFactor(0);
             fixedElements[i].setDepth(4000);
         }
@@ -319,7 +350,7 @@ this.pickupText.setVisible(false);
         this.aliveText.setText(alive);
     }
 
-    updateScore(score) {}
+    updateScore(score) { }
 
     updateKills(kills) {
         this.killText.setText(kills);
@@ -401,14 +432,14 @@ this.pickupText.setVisible(false);
         }
 
         const maxAmmo =
-    weapon === "bomb"
-        ? 3
-        : this.scene.bulletSystem
-            .getWeaponConfig(weapon).ammo;
+            weapon === "bomb"
+                ? 3
+                : this.scene.bulletSystem
+                    .getWeaponConfig(weapon).ammo;
 
-this.ammoText.setText(
-    player.getCurrentAmmo() + " / " + maxAmmo
-);
+        this.ammoText.setText(
+            player.getCurrentAmmo() + " / " + maxAmmo
+        );
     }
 
     startReloadAnimation(duration) {
@@ -491,20 +522,149 @@ this.ammoText.setText(
     }
 
     updateArmorIcons(player) {
-    if (player.hasHelmet) {
-        this.helmetIcon.setColor("#ffffff");
-    } else {
-        this.helmetIcon.setColor("#555555");
+        if (player.hasHelmet) {
+            this.helmetIcon.setColor("#ffffff");
+        } else {
+            this.helmetIcon.setColor("#555555");
+        }
+
+        if (player.hasVest) {
+            this.vestIcon.setColor("#ffffff");
+        } else {
+            this.vestIcon.setColor("#555555");
+        }
     }
 
-    if (player.hasVest) {
-        this.vestIcon.setColor("#ffffff");
-    } else {
-        this.vestIcon.setColor("#555555");
+    showPickupText(show) {
+        this.pickupText.setVisible(show);
     }
-}
 
-showPickupText(show) {
-    this.pickupText.setVisible(show);
-}
+    openPauseMenu() {
+        const scene = this.scene;
+        const w = scene.scale.width;
+        const h = scene.scale.height;
+
+        scene.physics.pause();
+
+        const container = scene.add.container(0, 0);
+        container.setScrollFactor(0);
+        container.setDepth(99999);
+
+        const overlay = scene.add.rectangle(
+            w / 2,
+            h / 2,
+            w,
+            h,
+            0x000000,
+            0.65
+        )
+            .setInteractive();
+
+        const panel = scene.add.rectangle(
+            w / 2,
+            h / 2,
+            420,
+            300,
+            0x0f141c,
+            0.96
+        );
+        panel.setInteractive();
+
+        panel.setStrokeStyle(3, 0xf3a922);
+
+        const title = scene.add.text(
+            w / 2,
+            h / 2 - 100,
+            "PAUSED",
+            {
+                fontSize: "38px",
+                color: "#ffffff",
+                fontStyle: "bold"
+            }
+        ).setOrigin(0.5);
+
+        const resumeBtn = scene.add.rectangle(
+            w / 2,
+            h / 2 - 20,
+            240,
+            50,
+            0xf3a922
+        ).setInteractive({ useHandCursor: true });
+
+        const resumeText = scene.add.text(
+            w / 2,
+            h / 2 - 20,
+            "RESUME",
+            {
+                fontSize: "22px",
+                color: "#000000",
+                fontStyle: "bold"
+            }
+        ).setOrigin(0.5);
+
+        const exitBtn = scene.add.rectangle(
+            w / 2,
+            h / 2 + 55,
+            240,
+            50,
+            0x182026
+        ).setInteractive({ useHandCursor: true });
+
+        exitBtn.setStrokeStyle(2, 0xffffff, 0.4);
+
+        const exitText = scene.add.text(
+            w / 2,
+            h / 2 + 55,
+            "MAIN MENU",
+            {
+                fontSize: "22px",
+                color: "#ffffff",
+                fontStyle: "bold"
+            }
+        ).setOrigin(0.5);
+
+        resumeBtn.on("pointerdown", () => {
+            scene.physics.resume();
+            container.destroy();
+        });
+
+        exitBtn.on("pointerdown", () => {
+            scene.physics.resume();
+            container.destroy();
+            scene.scene.start("MenuScene");
+        });
+
+        container.add([
+            overlay,
+            panel,
+            title,
+            resumeBtn,
+            resumeText,
+            exitBtn,
+            exitText
+        ]);
+
+        const ui = [
+            overlay,
+            panel,
+            title,
+            resumeBtn,
+            resumeText,
+            exitBtn,
+            exitText
+        ];
+
+        for (let i = 0; i < ui.length; i++) {
+            ui[i].setScrollFactor(0);
+            ui[i].setDepth(100000);
+        }
+
+        resumeBtn.setDepth(100000);
+        resumeText.setDepth(100000);
+
+        exitBtn.setDepth(100000);
+        exitText.setDepth(100000);
+    }
+
+
 }

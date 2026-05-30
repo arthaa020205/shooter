@@ -144,17 +144,11 @@ export default class Enemy {
 
     updateNamePosition() {
 
-        this.nameText.x = Phaser.Math.Linear(
-    this.nameText.x,
-    this.sprite.x,
-    0.15
-);
+        this.nameText.setOrigin(0.5);
 
-this.nameText.y = Phaser.Math.Linear(
-    this.nameText.y,
-    this.sprite.y - 48,
-    0.15
-);
+        this.nameText.x = this.sprite.x;
+
+        this.nameText.y = this.sprite.y - 52;
 
     }
 
@@ -257,23 +251,23 @@ this.nameText.y = Phaser.Math.Linear(
     }
 
     updateWeaponVisual() {
-    if (this.weaponVisual) {
-        this.weaponVisual.destroy();
-        this.weaponVisual = null;
+        if (this.weaponVisual) {
+            this.weaponVisual.destroy();
+            this.weaponVisual = null;
+        }
+
+        if (!this.currentWeapon) return;
+
+        this.weaponVisual = WeaponVisualFactory.create(
+            this.scene,
+            this.currentWeapon,
+            0,
+            0,
+            0.85
+        );
+
+        this.weaponSprite.add(this.weaponVisual);
     }
-
-    if (!this.currentWeapon) return;
-
-    this.weaponVisual = WeaponVisualFactory.create(
-        this.scene,
-        this.currentWeapon,
-        0,
-        0,
-        0.85
-    );
-
-    this.weaponSprite.add(this.weaponVisual);
-}
 
     hasWeapon() {
         return this.inventory.length > 0;
@@ -281,41 +275,41 @@ this.nameText.y = Phaser.Math.Linear(
 
     takeDamage(amount) {
 
-    let finalDamage = amount;
+        let finalDamage = amount;
 
-    if (this.hasHelmet) {
-        finalDamage -= 3;
-    }
-
-    if (this.hasVest) {
-        finalDamage -= 5;
-    }
-
-    if (finalDamage < 1) {
-        finalDamage = 1;
-    }
-
-    this.hp -= finalDamage;
-
-    this.body.fillColor = 0xff4444;
-
-    this.scene.time.delayedCall(100, () => {
-
-        if (this.hp > 0) {
-
-            this.body.fillColor =
-                this.originalBodyColor || 0xff5555;
-
+        if (this.hasHelmet) {
+            finalDamage -= 3;
         }
 
-    });
+        if (this.hasVest) {
+            finalDamage -= 5;
+        }
 
-    if (this.hp <= 0) {
+        if (finalDamage < 1) {
+            finalDamage = 1;
+        }
 
-        this.destroy();
+        this.hp -= finalDamage;
 
+        this.body.fillColor = 0xff4444;
+
+        this.scene.time.delayedCall(100, () => {
+
+            if (this.hp > 0) {
+
+                this.body.fillColor =
+                    this.originalBodyColor || 0xff5555;
+
+            }
+
+        });
+
+        if (this.hp <= 0) {
+
+            this.destroy();
+
+        }
     }
-}
 
     destroy() {
 
