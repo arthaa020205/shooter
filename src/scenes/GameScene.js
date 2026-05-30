@@ -24,66 +24,18 @@ export default class GameScene extends Phaser.Scene {
 
     preload() {
         this.load.audio("explosionSound", "assets/sounds/explosion.mp3");
-
-        this.load.audio(
-            "chestOpenSound",
-            "assets/sounds/chest_open.mp3"
-        );
-
-        this.load.audio(
-            "awmSound",
-            "assets/sounds/awm.mp3"
-        );
-
-        this.load.audio(
-            "scarSound",
-            "assets/sounds/scar.mp3"
-        );
-
-        this.load.audio(
-            "ak47Sound",
-            "assets/sounds/ak47.mp3"
-        );
-
-        this.load.audio(
-            "uziSound",
-            "assets/sounds/uzi.mp3"
-        );
-
-        this.load.audio(
-            "m4Sound",
-            "assets/sounds/m4.mp3"
-        );
-
-        this.load.audio(
-            "smgSound",
-            "assets/sounds/smg.mp3"
-        );
-
-        this.load.audio(
-            "pistolSound",
-            "assets/sounds/pistol.mp3"
-        );
-
-        this.load.audio(
-            "rpgSound",
-            "assets/sounds/rpg.mp3"
-        );
-
-        this.load.audio(
-            "reloadSound",
-            "assets/sounds/reload.mp3"
-        );
-
-        this.load.audio(
-            "victorySound",
-            "assets/sounds/victory.mp3"
-        );
-
-        this.load.audio(
-            "loseSound",
-            "assets/sounds/lose.mp3"
-        );
+        this.load.audio("chestOpenSound", "assets/sounds/chest_open.mp3");
+        this.load.audio("awmSound", "assets/sounds/awm.mp3");
+        this.load.audio("scarSound", "assets/sounds/scar.mp3");
+        this.load.audio("ak47Sound", "assets/sounds/ak47.mp3");
+        this.load.audio("uziSound", "assets/sounds/uzi.mp3");
+        this.load.audio("m4Sound", "assets/sounds/m4.mp3");
+        this.load.audio("smgSound", "assets/sounds/smg.mp3");
+        this.load.audio("pistolSound", "assets/sounds/pistol.mp3");
+        this.load.audio("rpgSound", "assets/sounds/rpg.mp3");
+        this.load.audio("reloadSound", "assets/sounds/reload.mp3");
+        this.load.audio("victorySound", "assets/sounds/victory.mp3");
+        this.load.audio("loseSound", "assets/sounds/lose.mp3");
     }
 
     create() {
@@ -92,13 +44,16 @@ export default class GameScene extends Phaser.Scene {
         this.totalDamage = 0;
         this.gameEnded = false;
 
+        this.isMouseDown = false;
+        this.lastShotTime = 0;
+
+        this.isPauseMenuOpen = false;
+        this.pauseContainer = null;
+
         this.mapSystem = new MapSystem(this);
         this.mapSystem.createWorld();
         this.mapSystem.createGrid();
         this.mapSystem.createObstacles();
-
-        this.isMouseDown = false;
-        this.lastShotTime = 0;
 
         this.zoneSystem = new ZoneSystem(this);
 
@@ -110,6 +65,7 @@ export default class GameScene extends Phaser.Scene {
             0.08,
             0.08
         );
+
         this.cameras.main.setDeadzone(180, 120);
         this.cameras.main.setZoom(1);
 
@@ -121,6 +77,7 @@ export default class GameScene extends Phaser.Scene {
         if (this.tutorialSystem.shouldShowTutorial()) {
             this.tutorialSystem.create();
         }
+
         this.weaponSystem = new WeaponSystem(this);
         this.itemSystem = new ItemSystem(this);
         this.chestSystem = new ChestSystem(this);
@@ -137,12 +94,7 @@ export default class GameScene extends Phaser.Scene {
             this.mapSystem.obstacles
         );
 
-        this.crosshair = this.add.circle(
-            0,
-            0,
-            6,
-            0xffffff
-        );
+        this.crosshair = this.add.circle(0, 0, 6, 0xffffff);
 
         this.crosshair.setPosition(
             this.input.activePointer.worldX,
@@ -152,21 +104,15 @@ export default class GameScene extends Phaser.Scene {
         this.crosshair.setDepth(9999);
 
         for (let i = 0; i < this.enemySystem.enemies.length; i++) {
-
-            const enemy =
-                this.enemySystem.enemies[i];
+            const enemy = this.enemySystem.enemies[i];
 
             this.physics.add.collider(
                 enemy.sprite,
                 this.mapSystem.obstacles,
                 () => {
-
-                    // paksa cari arah baru
                     this.enemySystem.setRandomSafeWaypoint(enemy);
-
                 }
             );
-
         }
 
         this.keys = this.input.keyboard.addKeys({
@@ -175,7 +121,8 @@ export default class GameScene extends Phaser.Scene {
             left: Phaser.Input.Keyboard.KeyCodes.A,
             right: Phaser.Input.Keyboard.KeyCodes.D,
             reload: Phaser.Input.Keyboard.KeyCodes.R,
-            pickup: Phaser.Input.Keyboard.KeyCodes.F
+            pickup: Phaser.Input.Keyboard.KeyCodes.F,
+            pause: Phaser.Input.Keyboard.KeyCodes.ESC
         });
 
         this.weaponKeys = this.input.keyboard.addKeys({
@@ -187,6 +134,7 @@ export default class GameScene extends Phaser.Scene {
         });
 
         this.input.on("pointerdown", () => {
+            if (this.isPauseMenuOpen) return;
             this.isMouseDown = true;
         });
 
@@ -197,6 +145,7 @@ export default class GameScene extends Phaser.Scene {
 
     shootPlayer(pointer) {
         if (this.gameEnded) return;
+        if (this.isPauseMenuOpen) return;
         if (!this.player.hasWeapon()) return;
         if (this.player.isReloading) return;
         if (!this.player.canShoot) return;
@@ -254,15 +203,29 @@ export default class GameScene extends Phaser.Scene {
         this.player.useAmmo();
 
         if (currentWeapon === "sniper") {
-
             this.player.startShootCooldown(1500);
-
         }
+
         this.uiSystem.updateAmmo(this.player);
     }
 
     update(time, delta) {
+        if (
+            Phaser.Input.Keyboard.JustDown(
+                this.keys.pause
+            )
+        ) {
+            if (this.isPauseMenuOpen) {
+                this.closePauseMenu();
+            } else {
+                this.openPauseMenu();
+            }
+
+            return;
+        }
+
         if (this.gameEnded) return;
+        if (this.isPauseMenuOpen) return;
 
         this.player.move(this.keys);
         this.compassSystem.update(this.player);
@@ -274,105 +237,65 @@ export default class GameScene extends Phaser.Scene {
             this.tryAutoShoot(time);
         }
 
-        // =========================================
-        // RELOAD
-        // =========================================
         if (
             Phaser.Input.Keyboard.JustDown(
                 this.keys.reload
             )
         ) {
-
             this.player.reload();
-
         }
 
-        // =========================================
-        // UI UPDATE
-        // =========================================
-        this.uiSystem.updateAmmo(
-            this.player
-        );
-
+        this.uiSystem.updateAmmo(this.player);
         this.uiSystem.updateReloadAnimation();
 
-        // =========================================
-        // PICKUP SYSTEM (F)
-        // =========================================
-        // =========================================
-        // PICKUP SYSTEM (F)
-        // =========================================
         if (
             Phaser.Input.Keyboard.JustDown(
                 this.keys.pickup
             )
         ) {
-
-            // =========================
-            // OPEN CHEST
-            // =========================
             const chestOpened =
                 this.chestSystem.openNearestChestByPlayer(
                     this.player
                 );
 
-            // kalau berhasil buka chest,
-            // hentikan dulu proses pickup
             if (chestOpened) {
                 return;
             }
 
-            // =========================
-            // WEAPON PICKUP
-            // =========================
             const weaponPicked =
                 this.weaponSystem.checkPlayerPickup(
                     this.player
                 );
 
             if (weaponPicked) {
-
-                this.uiSystem.updateWeaponBar(
-                    this.player
-                );
-
-                this.uiSystem.updateAmmo(
-                    this.player
-                );
-
+                this.uiSystem.updateWeaponBar(this.player);
+                this.uiSystem.updateAmmo(this.player);
                 return;
-
             }
 
-            // =========================
-            // ITEM PICKUP
-            // =========================
             const itemPicked =
                 this.itemSystem.checkPlayerPickup(
                     this.player
                 );
 
             if (itemPicked) {
-
-                this.uiSystem.updateHP(
-                    this.player.hp
-                );
-
-                this.uiSystem.updateArmorIcons(
-                    this.player
-                );
-
+                this.uiSystem.updateHP(this.player.hp);
+                this.uiSystem.updateArmorIcons(this.player);
             }
-
         }
 
-        const zoneDamage = this.zoneSystem.update(this.player, delta);
+        const zoneDamage =
+            this.zoneSystem.update(this.player, delta);
 
         this.uiSystem.updateZone(
             this.zoneSystem.getTimerText()
         );
 
-        const nearWeapon = this.weaponSystem.findNearestWeapon(this.player.sprite);
+        const nearWeapon =
+            this.weaponSystem.findNearestWeapon(
+                this.player.sprite
+            );
+
         const nearItem = this.itemSystem.findNearestItem
             ? this.itemSystem.findNearestItem(this.player.sprite)
             : null;
@@ -401,6 +324,20 @@ export default class GameScene extends Phaser.Scene {
             if (d < 70) showPickup = true;
         }
 
+        const nearChest =
+            this.chestSystem.findNearestChest(this.player.sprite);
+
+        if (nearChest) {
+            const d = Phaser.Math.Distance.Between(
+                this.player.sprite.x,
+                this.player.sprite.y,
+                nearChest.x,
+                nearChest.y
+            );
+
+            if (d < 80) showPickup = true;
+        }
+
         this.uiSystem.showPickupText(showPickup);
 
         if (zoneDamage) {
@@ -413,48 +350,21 @@ export default class GameScene extends Phaser.Scene {
         }
 
         this.enemySystem.update(
-
             this.player.sprite,
             this.zoneSystem,
             this.weaponSystem,
             this.bulletSystem,
             delta
         );
+
         for (let i = 0; i < this.enemySystem.enemies.length; i++) {
             const enemy = this.enemySystem.enemies[i];
-
-            const nearChest = this.chestSystem.findNearestChest(this.player.sprite);
-
-            if (nearChest) {
-                const d = Phaser.Math.Distance.Between(
-                    this.player.sprite.x,
-                    this.player.sprite.y,
-                    nearChest.x,
-                    nearChest.y
-                );
-
-                if (d < 80) {
-                    showPickup = true;
-                }
-            }
 
             if (!enemy.sprite.active) continue;
 
             this.chestSystem.openNearestChestByEnemy(enemy);
             this.weaponSystem.checkEnemyPickup(enemy);
             this.itemSystem.checkEnemyPickup(enemy);
-        }
-
-        for (let i = 0; i < this.enemySystem.enemies.length; i++) {
-
-            const enemy = this.enemySystem.enemies[i];
-
-            if (!enemy.sprite.active) continue;
-
-            this.itemSystem.checkEnemyPickup(
-                enemy
-            );
-
         }
 
         this.uiSystem.updateAlive(
@@ -474,6 +384,157 @@ export default class GameScene extends Phaser.Scene {
             this.enemySystem.enemies,
             this.zoneSystem
         );
+    }
+
+    openPauseMenu() {
+        this.isPauseMenuOpen = true;
+        this.isMouseDown = false;
+
+        const w = this.scale.width;
+        const h = this.scale.height;
+
+        this.pauseContainer = this.add.container(
+            w / 2,
+            h / 2
+        );
+
+        this.pauseContainer.setDepth(999999);
+        this.pauseContainer.setScrollFactor(0);
+
+        const overlay = this.add.rectangle(
+            0,
+            0,
+            w,
+            h,
+            0x000000,
+            0.65
+        );
+
+        overlay.setScrollFactor(0);
+
+        const panel = this.add.rectangle(
+            0,
+            0,
+            430,
+            270,
+            0x0f141c,
+            0.96
+        );
+
+        panel.setStrokeStyle(3, 0xf3a922);
+        panel.setScrollFactor(0);
+
+        const title = this.add.text(
+            0,
+            -90,
+            "PAUSE MENU",
+            {
+                fontSize: "30px",
+                color: "#ffffff",
+                fontStyle: "bold",
+                fontFamily: "Arial Black"
+            }
+        ).setOrigin(0.5);
+
+        title.setScrollFactor(0);
+
+        const resumeBtn = this.add.rectangle(
+            0,
+            -20,
+            250,
+            52,
+            0xf3a922
+        ).setInteractive({ useHandCursor: true });
+
+        resumeBtn.setScrollFactor(0);
+
+        const resumeText = this.add.text(
+            0,
+            -20,
+            "RESUME",
+            {
+                fontSize: "20px",
+                color: "#000000",
+                fontStyle: "bold"
+            }
+        ).setOrigin(0.5);
+
+        resumeText.setScrollFactor(0);
+
+        const menuBtn = this.add.rectangle(
+            0,
+            55,
+            250,
+            52,
+            0x182026
+        ).setInteractive({ useHandCursor: true });
+
+        menuBtn.setStrokeStyle(2, 0xf3a922);
+        menuBtn.setScrollFactor(0);
+
+        const menuText = this.add.text(
+            0,
+            55,
+            "MAIN MENU",
+            {
+                fontSize: "20px",
+                color: "#ffffff",
+                fontStyle: "bold"
+            }
+        ).setOrigin(0.5);
+
+        menuText.setScrollFactor(0);
+
+        resumeBtn.on("pointerover", () => {
+            resumeBtn.fillColor = 0xffffff;
+        });
+
+        resumeBtn.on("pointerout", () => {
+            resumeBtn.fillColor = 0xf3a922;
+        });
+
+        resumeBtn.on("pointerup", () => {
+            this.closePauseMenu();
+        });
+
+        menuBtn.on("pointerover", () => {
+            menuBtn.fillColor = 0xf3a922;
+            menuText.setColor("#000000");
+        });
+
+        menuBtn.on("pointerout", () => {
+            menuBtn.fillColor = 0x182026;
+            menuText.setColor("#ffffff");
+        });
+
+        menuBtn.on("pointerup", () => {
+            this.closePauseMenu();
+            this.scene.start("MenuScene");
+        });
+
+        this.pauseContainer.add([
+            overlay,
+            panel,
+            title,
+            resumeBtn,
+            resumeText,
+            menuBtn,
+            menuText
+        ]);
+
+        this.physics.world.pause();
+    }
+
+    closePauseMenu() {
+        if (this.pauseContainer) {
+            this.pauseContainer.destroy();
+            this.pauseContainer = null;
+        }
+
+        this.physics.world.resume();
+
+        this.isPauseMenuOpen = false;
+        this.isMouseDown = false;
     }
 
     checkBulletHitEnemies() {
@@ -713,43 +774,41 @@ export default class GameScene extends Phaser.Scene {
     }
 
     showLoseResult() {
-    if (this.gameEnded) return;
+        if (this.gameEnded) return;
 
-    this.gameEnded = true;
+        this.gameEnded = true;
 
-    this.sound.play("loseSound", {
-        volume: 0.7
-    });
+        this.sound.play("loseSound", {
+            volume: 0.7
+        });
 
-    const placement = this.enemySystem.getAliveCount() + 1;
+        const placement =
+            this.enemySystem.getAliveCount() + 1;
 
-    this.endGameSystem.showResult(
-        "GAME OVER",
-        placement,
-        this.kills,
-        this.totalDamage
-    );
-}
+        this.endGameSystem.showResult(
+            "GAME OVER",
+            placement,
+            this.kills,
+            this.totalDamage
+        );
+    }
 
     showWinResult() {
+        if (this.gameEnded) return;
 
-    if (this.gameEnded) return;
+        this.gameEnded = true;
 
-    this.gameEnded = true;
+        this.sound.play("victorySound", {
+            volume: 0.7
+        });
 
-    // SOUND MENANG
-    this.sound.play("victorySound", {
-        volume: 0.7
-    });
-
-    this.endGameSystem.showResult(
-        "YOU WIN",
-        1,
-        this.kills,
-        this.totalDamage
-    );
-
-}
+        this.endGameSystem.showResult(
+            "YOU WIN",
+            1,
+            this.kills,
+            this.totalDamage
+        );
+    }
 
     tryAutoShoot(time) {
         if (!this.player.hasWeapon()) return;
@@ -782,28 +841,34 @@ export default class GameScene extends Phaser.Scene {
         return rates[weapon] || 300;
     }
 
-    playSpatialSound(key, x, y, maxDistance = 1200, maxVolume = 0.8) {
-    if (!this.player || !this.player.sprite) return;
-
-    const distance = Phaser.Math.Distance.Between(
-        this.player.sprite.x,
-        this.player.sprite.y,
+    playSpatialSound(
+        key,
         x,
-        y
-    );
+        y,
+        maxDistance = 1200,
+        maxVolume = 0.8
+    ) {
+        if (!this.player || !this.player.sprite) return;
 
-    let volume = 1 - distance / maxDistance;
+        const distance = Phaser.Math.Distance.Between(
+            this.player.sprite.x,
+            this.player.sprite.y,
+            x,
+            y
+        );
 
-    volume = Phaser.Math.Clamp(
-        volume,
-        0,
-        1
-    );
+        let volume = 1 - distance / maxDistance;
 
-    if (volume <= 0) return;
+        volume = Phaser.Math.Clamp(
+            volume,
+            0,
+            1
+        );
 
-    this.sound.play(key, {
-        volume: volume * maxVolume
-    });
-}
+        if (volume <= 0) return;
+
+        this.sound.play(key, {
+            volume: volume * maxVolume
+        });
+    }
 }

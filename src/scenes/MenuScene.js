@@ -105,7 +105,7 @@ export default class MenuScene extends Phaser.Scene {
         this.add.text(
             65,
             73,
-            "DEADLY STRAY",
+            "THE DEADLY STRAY",
             {
                 fontSize: "64px",
                 color: "#f3a922",
@@ -117,7 +117,7 @@ export default class MenuScene extends Phaser.Scene {
         this.add.text(
             60,
             70,
-            "DEADLY STRAY",
+            "THE DEADLY STRAY",
             {
                 fontSize: "64px",
                 color: "#ffffff",
@@ -145,6 +145,7 @@ export default class MenuScene extends Phaser.Scene {
         this.createSettingsButton(w, h);
         this.createModePanel(w, h);
         this.createFooter(h);
+        
     }
 
     createCoinPanel(w) {
